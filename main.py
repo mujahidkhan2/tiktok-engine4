@@ -6,9 +6,16 @@ from health_tracker import HealthTracker
 from identity_generator import IdentityGenerator
 import threading
 import re
+import os
 
 app = Flask(__name__)
 app.secret_key = "tiktok_vip_secret_key_2026"
+
+# --- SMART COUNTRY LIST ---
+SUPPORTED_COUNTRIES = [
+    "UK", "USA", "SAUDI", "UAE", "DUBAI", "PK", "PAKISTAN", 
+    "IN", "INDIA", "BD", "BANGLADESH", "TURKEY", "FRANCE", "GERMANY"
+]
 
 try:
     engine = TikTokEngine()
@@ -19,7 +26,7 @@ try:
 except Exception as e:
     print(f"❌ سسٹم شروع کرنے میں غلطی: {e}")
 
-# HTML ٹیمپلیٹ (سپر ایڈمن ٹیبل اور اکاؤنٹ ایکسپلورر کے ساتھ)
+# HTML ٹیمپلیٹ
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
@@ -92,8 +99,8 @@ HTML_TEMPLATE = """
             <h3>⚙️ ماسٹر کنٹرول پینل</h3>
             <form action="/action" method="post">
                 <label>اکاؤنٹس کی تعداد یا لوکیشن مکس:</label>
-                <input type="text" name="amount" placeholder="مثلاً: 100 یا UK:50,USA:30,PK:20">
-                <span class="hint">نوٹ: اب آپ کسی بھی طریقے سے لکھیں (UK:10 یا uk,10)، سسٹم خود ٹھیک کر لے گا۔</span>
+                <input type="text" name="amount" placeholder="مثلاً: 100 یا UK 50 USA 30 PK 20">
+                <span class="hint">اب آپ صرف 'UK 10' یا 'USA 20' لکھیں، کوئی کومہ یا کولن کی ضرورت نہیں۔ سسٹم خود پہچان لے گا۔</span>
                 <button type="submit" name="task" value="create" class="btn btn-primary">📦 اکاؤنٹس جنریٹ کریں</button>
                 
                 <label>ٹریفک لنک (URL):</label>
@@ -152,48 +159,34 @@ HTML_TEMPLATE = """
 """
 
 def parse_hybrid_input(user_input):
-    """
-    Smarter Input Parser: Handles UK:10, uk,10, uk10, 100 etc.
-    Prevents server crashes.
-    """
     if not user_input:
         return None, None
-        
     user_input = user_input.strip().upper()
-    
-    # Case 1: Only a number is provided
     if user_input.isdigit():
         return int(user_input), None
-
-    # Case 2: Hybrid input (Country:Number, Country:Number)
     try:
         specs = {}
-        # Split by comma or semicolon
-        parts = user_input.replace(';', ',').split(",")
-        
-        for part in parts:
-            part = part.strip()
-            if not part: continue
-            
-            if ':' in part:
-                country, num = part.split(":")
-                specs[country.strip().upper()] = int(num.strip())
-            else:
-                # Advanced parsing for things like 'UK10' or 'UK,10'
-                match = re.search(r'([A-Z]+)(\d+)', part)
-                if match:
-                    country = match.group(1).strip()
-                    num = match.group(2).strip()
-                    specs[country.upper()] = int(num)
-                else:
-                    continue
-        
+        normalized_input = user_input.replace(',', ' ').replace(':', ' ').replace(';', ' ')
+        tokens = normalized_input.split()
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            if token in SUPPORTED_COUNTRIES:
+                if i + 1 < len(tokens):
+                    try:
+                        count = int(tokens[i+1])
+                        specs[token] = count
+                        i += 2
+                        continue
+                    except ValueError:
+                        pass
+            i += 1
         if not specs:
+            nums = re.findall(r'\d+', user_input)
+            if nums: return int(nums[0]), None
             return None, None
-            
         total_count = sum(specs.values())
         return total_count, specs
-        
     except Exception as e:
         print(f"Parsing Error: {e}")
         return None, None
@@ -224,25 +217,22 @@ def action():
     amount_input = request.form.get('amount')
     url = request.form.get('url')
     report = None
-
     if task == 'create':
         if amount_input:
             try:
                 count, specs = parse_hybrid_input(amount_input)
                 if count is None:
-                    flash("❌ ان پٹ فارمیٹ غلط ہے! (مثال: UK:10 یا 100)")
+                    flash("❌ ان پٹ سمجھ نہیں آیا! براہ کرم 'UK 10' یا '100' کی طرح لکھیں۔")
                     return redirect(url_for('index'))
-                
                 def run_creation():
-                    engine.create_batch_accounts(count, custom_specs=specs)
-                
+                    try: engine.create_batch_accounts(count, custom_specs=specs)
+                    except Exception as inner_e: print(f"Execution Error: {inner_e}")
                 threading.Thread(target=run_creation).start()
                 flash(f"✅ {count} اکاؤنٹس کا عمل شروع ہو گیا ہے۔")
             except Exception as e:
                 flash(f"❌ سسٹم ایرر: {e}")
         else:
             flash("❌ براہ کرم تعداد لکھیں!")
-
     elif task == 'boost':
         try:
             batches = synergy.coordinate_workers(total_accounts=1000)
@@ -250,7 +240,6 @@ def action():
             flash("✅ میوچل گروتھ سائیکل شروع ہو گیا ہے!")
         except Exception as e:
             flash(f"❌ غلطی: {e}")
-
     elif task == 'traffic':
         if url:
             try:
@@ -261,20 +250,18 @@ def action():
                 flash(f"❌ غلطی: {e}")
         else:
             flash("❌ براہ کرم لنک درج کریں!")
-
     elif task == 'health':
         res = health.generate_detailed_report()
         report = f"--- 📊 NETWORK HEALTH REPORT ---\nTotal Accounts: {res['summary']['total']}\nHealthy: {res['summary']['healthy']}\n🌟 VIP Sellable: {res['summary']['vip_sellable']}"
-
     elif task == 'status':
         status = engine.get_system_status()
         report = f"System Status: {status['system_health']}\nTotal Managed Accounts: {status['total_accounts']}"
-
     elif task == 'clear':
         engine.acc_manager.clear_all_accounts()
         flash("🗑️ تمام ڈیٹا صاف کر دیا گیا!")
-
     return render_template_string(HTML_TEMPLATE, report=report)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    # Railway Dynamic Port Setting
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
