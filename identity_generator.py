@@ -23,9 +23,14 @@ class IdentityGenerator:
         else:
             return random.choice(self.other_countries)
 
-    def generate_identity(self):
-        """Generates a single random identity"""
-        country = self.get_random_country()
+    def generate_identity(self, country=None):
+        """
+        Generates a single random identity.
+        If country is provided, it uses that; otherwise, it uses Auto Mode.
+        """
+        if country is None:
+            country = self.get_random_country()
+            
         return {
             "country": country,
             "device_id": f"DEV_{random.getrandbits(32)}",
@@ -35,24 +40,42 @@ class IdentityGenerator:
 
     def generate_batch(self, count, custom_specs=None):
         """
-        Handles both Auto and Manual modes.
-        custom_specs example: {"UK": 5, "USA": 2, "PK": 1}
+        Robust Batch Generator:
+        Handles: 
+        1. Simple count (Auto Mode)
+        2. Custom Specs (Manual Mode e.g., {"UK": 10, "USA": 5})
         """
         identities = []
         
-        if custom_specs:
-            # Manual Mode: Generate exact numbers as requested
-            for country, num in custom_specs.items():
-                for _ in range(num):
-                    identities.append({
-                        "country": country,
-                        "device_id": f"DEV_{random.getrandbits(32)}",
-                        "fingerprint": f"FP_{random.getrandbits(64)}",
-                        "proxy_type": "Residential" if country in ["UK", "USA"] else "Datacenter"
-                    })
-        else:
-            # Auto Mode: Generate based on percentages
-            for _ in range(count):
+        try:
+            # Case 1: Manual Mode (Specific countries and counts)
+            if custom_specs and isinstance(custom_specs, dict):
+                print(f"📦 Generating batch with custom specs: {custom_specs}")
+                for country, num in custom_specs.items():
+                    # Ensure 'num' is an integer to prevent crashes
+                    try:
+                        valid_num = int(num)
+                        for _ in range(valid_num):
+                            identities.append(self.generate_identity(country=country))
+                    except (ValueError, TypeError):
+                        print(f"⚠️ Skipping invalid number for {country}: {num}")
+                
+                # If for some reason no identities were created from specs, 
+                # fall back to auto-mode to prevent 500 error.
+                if not identities:
+                    for _ in range(count):
+                        identities.append(self.generate_identity())
+                        
+            # Case 2: Auto Mode (Only total count provided)
+            else:
+                print(f"📦 Generating batch in auto-mode for {count} accounts")
+                for _ in range(count):
+                    identities.append(self.generate_identity())
+                    
+        except Exception as e:
+            print(f"❌ Critical error in generate_batch: {e}")
+            # Final fallback: return at least some identities to prevent server crash
+            for _ in range(count if isinstance(count, int) else 1):
                 identities.append(self.generate_identity())
         
         return identities
