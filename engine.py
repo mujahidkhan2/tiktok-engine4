@@ -10,11 +10,35 @@ class TikTokEngine:
         self.max_workers = 20 # Scaled up for a larger army
 
     def create_batch_accounts(self, count, custom_specs=None):
+        """
+        FIXED: Now handles both simple numbers and hybrid country specs.
+        Prevents 500 Internal Server Errors.
+        """
         from identity_generator import IdentityGenerator
         id_gen = IdentityGenerator()
-        identities = id_gen.generate_batch(count, custom_specs=custom_specs)
-        for identity in identities:
-            self.acc_manager.save_account(identity)
+        
+        try:
+            # اگر custom_specs (جیسے UK:10) ملے ہیں، تو ان کے مطابق جنریٹ کرو
+            if custom_specs and isinstance(custom_specs, dict):
+                print(f"⚙️ Processing hybrid request: {custom_specs}")
+                # identity_generator کو لسٹ بھیج رہے ہیں
+                identities = id_gen.generate_batch(count, custom_specs=custom_specs)
+            else:
+                # اگر صرف سادہ نمبر ہے، تو عام طریقے سے جنریٹ کرو
+                print(f"⚙️ Processing simple request for {count} accounts")
+                identities = id_gen.generate_batch(count)
+            
+            # اکاؤنٹس کو سیو کریں
+            if identities:
+                for identity in identities:
+                    self.acc_manager.save_account(identity)
+                print(f"✅ Successfully created and saved {len(identities)} accounts.")
+            else:
+                print("⚠️ No identities were generated.")
+                
+        except Exception as e:
+            print(f"❌ CRITICAL ENGINE ERROR during creation: {e}")
+            # یہاں ہم ایرر کو پرنٹ کریں گے تاکہ سرور کریش نہ ہو بلکہ لاگز میں نظر آئے
 
     def run_account_cycle(self, username):
         """
@@ -35,42 +59,30 @@ class TikTokEngine:
                 time.sleep(60) 
                 continue
 
-            # --- STEP 1: Random Wake-up Offset ---
-            # تاکہ 1000 اکاؤنٹس ایک ساتھ نہ جاگیں، ہر ایک اپنے لیے ایک رینڈم شروعاتی وقت چنے
-            initial_delay = random.randint(1, 3600) # 1 سیکنڈ سے 1 گھنٹے کے درمیان رینڈم وقفہ
+            initial_delay = random.randint(1, 3600) 
             time.sleep(initial_delay)
 
             try:
-                # --- STEP 2: Human Behavior Simulation ---
-                # یہاں ہم 'uploader' کو بتائیں گے کہ اس اکاؤنٹ کے لیے آج کا "موڈ" کیا ہے
                 behavior_mode = random.choice(['aggressive', 'passive', 'curious', 'minimal'])
-                
                 print(f"👤 {username} is now awake. Mode: {behavior_mode}")
-                
-                # TrustBuilder اب اس 'behavior_mode' کے مطابق کام کرے گا
                 builder.perform_human_actions(acc_data, mode=behavior_mode)
                 
-                # ٹرسٹ سکور میں اضافہ
                 current_score = acc_data.get('trust_score', 0)
                 self.acc_manager.update_trust_score(username, current_score + random.randint(1, 5))
 
             except Exception as e:
                 print(f"⚠️ {username} encountered an error: {e}")
 
-            # --- STEP 3: Random Sleep Cycle (The 'Alt-Pulat' Logic) ---
-            # ایک اکاؤنٹ 10 منٹ بعد سو سکتا ہے، دوسرا 5 گھنٹے بعد۔
-            # اس سے کوئی ترتیب نہیں رہے گی، بالکل انسانوں کی طرح۔
             if status == 'Active':
-                sleep_time = random.randint(600, 28800) # 10 منٹ سے 8 گھنٹے تک رینڈم نیند
-            else: # Slow Mode
-                sleep_time = random.randint(7200, 86400) # 2 گھنٹے سے 24 گھنٹے تک رینڈم نیند
+                sleep_time = random.randint(600, 28800) 
+            else: 
+                sleep_time = random.randint(7200, 86400) 
             
             print(f"💤 {username} is going to sleep for {sleep_time // 60} minutes.")
             time.sleep(sleep_time)
 
     def start_army(self):
         accounts = self.acc_manager.get_all_accounts()
-        # ThreadPool کے بجائے ہم ہر اکاؤنٹ کے لیے الگ تھریڈ چلائیں گے تاکہ وہ اپنی اپنی رینڈم ٹائمنگ پر چلیں
         for username in accounts:
             if accounts[username].get('status') != 'Terminated':
                 t = threading.Thread(target=self.run_account_cycle, args=(username,))
