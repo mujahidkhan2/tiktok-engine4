@@ -5,6 +5,7 @@ from traffic_pipeline import TrafficPipeline
 from health_tracker import HealthTracker
 from identity_generator import IdentityGenerator
 import threading
+import re
 
 app = Flask(__name__)
 app.secret_key = "tiktok_vip_secret_key_2026"
@@ -37,7 +38,6 @@ HTML_TEMPLATE = """
         .stat-box h4 { margin: 0; font-size: 14px; color: #aaa; }
         .stat-box p { margin: 5px 0 0; font-size: 22px; font-weight: bold; color: #fe2c55; }
 
-        /* Admin Table Styling */
         .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1e1e1e; color: white; direction: ltr; }
         .admin-table th, .admin-table td { padding: 12px; border: 1px solid #333; text-align: center; font-size: 14px; }
         .admin-table th { background: #333; color: #fe2c55; }
@@ -65,7 +65,7 @@ HTML_TEMPLATE = """
         .hint { font-size: 12px; color: #888; margin-bottom: 10px; display: block; }
     </style>
 </head>
-<body>
+<body dir="rtl">
     <div class="header">
         <h1>🚀 TikTok Engine 4 (Super-Admin Edition)</h1>
         <p>اسٹیلتھ موڈ: فعال | میوچل گروتھ: آن | لائیو مانیٹرنگ: فعال</p>
@@ -93,7 +93,7 @@ HTML_TEMPLATE = """
             <form action="/action" method="post">
                 <label>اکاؤنٹس کی تعداد یا لوکیشن مکس:</label>
                 <input type="text" name="amount" placeholder="مثلاً: 100 یا UK:50,USA:30,PK:20">
-                <span class="hint">نوٹ: صرف نمبر لکھیں تو پرسنٹیج چلے گی، اگر UK:10 لکھیں گے تو مینوئل چلے گا۔</span>
+                <span class="hint">نوٹ: اب آپ کسی بھی طریقے سے لکھیں (UK:10 یا uk,10)، سسٹم خود ٹھیک کر لے گا۔</span>
                 <button type="submit" name="task" value="create" class="btn btn-primary">📦 اکاؤنٹس جنریٹ کریں</button>
                 
                 <label>ٹریفک لنک (URL):</label>
@@ -152,20 +152,50 @@ HTML_TEMPLATE = """
 """
 
 def parse_hybrid_input(user_input):
-    user_input = user_input.strip()
-    if ":" in user_input or "," in user_input:
-        try:
-            specs = {}
-            parts = user_input.split(",")
-            for part in parts:
+    """
+    Smarter Input Parser: Handles UK:10, uk,10, uk10, 100 etc.
+    Prevents server crashes.
+    """
+    if not user_input:
+        return None, None
+        
+    user_input = user_input.strip().upper()
+    
+    # Case 1: Only a number is provided
+    if user_input.isdigit():
+        return int(user_input), None
+
+    # Case 2: Hybrid input (Country:Number, Country:Number)
+    try:
+        specs = {}
+        # Split by comma or semicolon
+        parts = user_input.replace(';', ',').split(",")
+        
+        for part in parts:
+            part = part.strip()
+            if not part: continue
+            
+            if ':' in part:
                 country, num = part.split(":")
                 specs[country.strip().upper()] = int(num.strip())
-            return sum(specs.values()), specs
-        except:
+            else:
+                # Advanced parsing for things like 'UK10' or 'UK,10'
+                match = re.search(r'([A-Z]+)(\d+)', part)
+                if match:
+                    country = match.group(1).strip()
+                    num = match.group(2).strip()
+                    specs[country.upper()] = int(num)
+                else:
+                    continue
+        
+        if not specs:
             return None, None
-    try:
-        return int(user_input), None
-    except ValueError:
+            
+        total_count = sum(specs.values())
+        return total_count, specs
+        
+    except Exception as e:
+        print(f"Parsing Error: {e}")
         return None, None
 
 @app.route('/')
@@ -200,14 +230,16 @@ def action():
             try:
                 count, specs = parse_hybrid_input(amount_input)
                 if count is None:
-                    flash("❌ ان پٹ فارمیٹ غلط ہے!")
+                    flash("❌ ان پٹ فارمیٹ غلط ہے! (مثال: UK:10 یا 100)")
                     return redirect(url_for('index'))
+                
                 def run_creation():
                     engine.create_batch_accounts(count, custom_specs=specs)
+                
                 threading.Thread(target=run_creation).start()
                 flash(f"✅ {count} اکاؤنٹس کا عمل شروع ہو گیا ہے۔")
             except Exception as e:
-                flash(f"❌ غلطی: {e}")
+                flash(f"❌ سسٹم ایرر: {e}")
         else:
             flash("❌ براہ کرم تعداد لکھیں!")
 
@@ -245,5 +277,4 @@ def action():
     return render_template_string(HTML_TEMPLATE, report=report)
 
 if __name__ == '__main__':
-    # Railway کے لیے پورٹ 8080 ہونا ضروری ہے
     app.run(host='0.0.0.0', port=8080)
