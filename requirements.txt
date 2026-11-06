@@ -1,7 +1,3 @@
 flask
 requests
-pandas
-python-dotenv
-schedule
-fake-useragent
 pytz
