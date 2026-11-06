@@ -2,6 +2,7 @@ import os
 import threading
 import time
 import random
+import json
 from flask import Flask, render_template_string, redirect, url_for
 
 # Import all modules
@@ -16,10 +17,11 @@ from synergy_manager import SynergyManager
 from traffic_pipeline import TrafficPipeline
 from system_guardian import SystemGuardian
 
+# Global Stats for Dashboard
 stats = {
-    "total\_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
-    "shop\_eligible": 0, "progress": 0, "current\_action": "System Ready", 
-    "logs": [], "critical\_errors": []
+    "total_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
+    "shop_eligible": 0, "progress": 0, "current_action": "System Ready", 
+    "logs": [], "critical_errors": []
 }
 
 app = Flask(__name__)
@@ -27,29 +29,31 @@ app = Flask(__name__)
 class SmartDiagnosticEngine:
     def __init__(self):
         self.modules = {}
-        self.load\_modules()
+        self.is_running = False
+        self.load_modules()
         self.guardian = SystemGuardian(self)
 
     def log(self, message):
         timestamp = time.strftime("%H:%M:%S")
         stats["logs"].insert(0, f"[{timestamp}] {message}")
-        if len(stats["logs"]) > 25: stats["logs"].pop()
+        if len(stats["logs"]) > 25: 
+            stats["logs"].pop()
 
-    def report\_issue(self, file\_name, error, solution):
-        issue = f"❌ {file\_name} | {error} | Sol: {solution}"
-        if issue not in stats["critical\_errors"]:
-            stats["critical\_errors"].append(issue)
-            self.log(f"🚨 ALERT: {file\_name} needs attention!")
+    def report_issue(self, file_name, error, solution):
+        issue = f"❌ {file_name} | {error} | Sol: {solution}"
+        if issue not in stats["critical_errors"]:
+            stats["critical_errors"].append(issue)
+            self.log(f"🚨 ALERT: {file_name} needs attention!")
 
-    def load\_modules(self):
+    def load_modules(self):
         try:
             engine = TikTokEngine()
             self.modules = {
                 'engine': engine,
-                'acc\_manager': engine.acc\_manager,
-                'id\_gen': engine.id\_gen,
+                'acc_manager': engine.acc_manager,
+                'id_gen': engine.id_gen,
                 'scheduler': Scheduler(),
-                'video\_gen': VideoCreator(),
+                'video_gen': VideoCreator(),
                 'uploader': StealthUploader(engine),
                 'health': HealthTracker(),
                 'synergy': SynergyManager(engine),
@@ -59,54 +63,56 @@ class SmartDiagnosticEngine:
         except Exception as e:
             self.log(f"Module Load Failure: {e}")
 
-    def run\_safe\_workflow(self, country\_config):
-        self.is\_running = True
-        total\_target = sum(country\_config.values())
+    def run_safe_workflow(self, country_config):
+        self.is_running = True
+        total_target = sum(country_config.values())
         processed = 0
 
-        for country, count in country\_config.items():
+        for country, count in country_config.items():
             for i in range(count):
-                if not self.is\_running: break
-                stats["current\_action"] = f"Processing {country} ({i+1}/{count})"
+                if not self.is_running: 
+                    break
+                
+                stats["current_action"] = f"Processing {country} ({i+1}/{count})"
                 
                 try:
                     # 1. Account Creation
-                    account\_id = self.modules['engine'].create\_account(country)
-                    if account\_id:
-                        stats["total\_accounts"] += 1
+                    account_id = self.modules['engine'].create_account(country)
+                    if account_id:
+                        stats["total_accounts"] += 1
                         stats["active"] += 1
-                        self.log(f"✅ Created: {account\_id}")
+                        self.log(f"✅ Created: {account_id}")
                         
                         # 2. Warming up
-                        self.modules['scheduler'].human\_sleep\_pattern()
+                        self.modules['scheduler'].human_sleep_pattern()
 
                         # 3. Content & Upload
-                        vid = self.modules['video\_gen'].create\_unique\_video\_metadata(account\_id, country)
-                        if self.modules['uploader'].upload\_video(account\_id, vid):
-                            self.log(f"📤 Uploaded: {account\_id}")
+                        vid = self.modules['video_gen'].create_unique_video_metadata(account_id, country)
+                        if self.modules['uploader'].upload_video(account_id, vid):
+                            self.log(f"📤 Uploaded: {account_id}")
                         else:
-                            err = self.guardian.analyze\_account\_failure(account\_id, "Upload Failed")
-                            self.report\_issue("uploader.py", err, "Check Proxy")
+                            err = self.guardian.analyze_account_failure(account_id, "Upload Failed")
+                            self.report_issue("uploader.py", err, "Check Proxy")
 
                         # 4. Health Check
-                        if self.modules['health'].check\_shop\_eligibility(account\_id):
-                            stats["shop\_eligible"] += 1
-                            self.log(f"⭐ Shop Eligible: {account\_id}")
+                        if self.modules['health'].check_shop_eligibility(account_id):
+                            stats["shop_eligible"] += 1
+                            self.log(f"⭐ Shop Eligible: {account_id}")
 
                     processed += 1
-                    stats["progress"] = int((processed / total\_target) * 100)
+                    stats["progress"] = int((processed / total_target) * 100)
                     time.sleep(random.uniform(1, 3))
 
                 except Exception as e:
                     self.log(f"🚨 Critical Skip: {str(e)}")
                     continue
 
-        stats["current\_action"] = "Workflow Completed"
-        self.is\_running = False
+        stats["current_action"] = "Workflow Completed"
+        self.is_running = False
 
-master\_bot = SmartDiagnosticEngine()
+master_bot = SmartDiagnosticEngine()
 
-DASHBOARD\_HTML = """
+DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
@@ -133,7 +139,7 @@ DASHBOARD\_HTML = """
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <span><strong style="color:#00ffcc;">سسٹم اسٹیٹس:</strong> {{current\_action}}</span>
+        <span><strong style="color:#00ffcc;">سسٹم اسٹیٹس:</strong> {{current_action}}</span>
         <a href="/start" class="btn">انجن چلائیں 🚀</a>
     </div>
 
@@ -162,7 +168,7 @@ DASHBOARD\_HTML = """
 </html>
 """
 
-DIAGNOSTICS\_HTML = """
+DIAGNOSTICS_HTML = """
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
@@ -205,33 +211,33 @@ DIAGNOSTICS\_HTML = """
 
 @app.route('/')
 def dashboard():
-    return render\_template\_string(
-        DASHBOARD\_HTML, total=stats["total\_accounts"], active=stats["active"], 
-        terminated=stats["terminated"], eligible=stats["shop\_eligible"], 
-        progress=stats["progress"], current\_action=stats["current\_action"], 
-        logs=stats["logs"], errors=stats["critical\_errors"]
+    return render_template_string(
+        DASHBOARD_HTML, total=stats["total_accounts"], active=stats["active"], 
+        terminated=stats["terminated"], eligible=stats["shop_eligible"], 
+        progress=stats["progress"], current_action=stats["current_action"], 
+        logs=stats["logs"], errors=stats["critical_errors"]
     )
 
 @app.route('/diagnostics')
 def diagnostics():
-    return render\_template\_string(
-        DIAGNOSTICS\_HTML, accounts=master\_bot.modules['acc\_manager'].get\_all\_accounts(), 
-        errors=stats["critical\_errors"]
+    return render_template_string(
+        DIAGNOSTICS_HTML, accounts=master_bot.modules['acc_manager'].get_all_accounts(), 
+        errors=stats["critical_errors"]
     )
 
 @app.route('/export/<username>')
-def export\_acc(username):
-    data = master\_bot.modules['acc\_manager'].export\_account\_data(username)
-    return f"<h1>Account Data for {username}</h1><pre>{json.dumps(data, indent=4)}</pre><br><a href='/diagnostics'>واپس جائیں</a>"
+def export_acc(username):
+    data = master_bot.modules['acc_manager'].export_account_data(username)
+    return f"<h1 style='font-family:sans-serif;'>Account Data for {username}</h1><pre>{json.dumps(data, indent=4)}</pre><br><a href='/diagnostics'>واپس جائیں</a>"
 
 @app.route('/start')
-def start\_engine():
-    if not getattr(master\_bot, 'is\_running', False):
+def start_engine():
+    if not getattr(master_bot, 'is_running', False):
         config = {"USA": 5, "UK": 5} 
-        threading.Thread(target=master\_bot.run\_safe\_workflow, args=(config,)).start()
-        return redirect(url\_for('dashboard'))
-    return redirect(url\_for('dashboard'))
+        threading.Thread(target=master_bot.run_safe_workflow, args=(config,)).start()
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard'))
 
-if __name__ == '\_\_main\_\_':
-    port = int(os.environ.get("PORT", 5000))
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
