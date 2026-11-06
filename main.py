@@ -5,16 +5,16 @@ import random
 from flask import Flask, render_template_string, redirect, url_for
 
 # Import all modules
-from account\_manager import AccountManager
-from identity\_generator import IdentityGenerator
+from account_manager import AccountManager
+from identity_generator import IdentityGenerator
 from engine import TikTokEngine
 from scheduler import Scheduler
-from video\_creator import VideoCreator
+from video_creator import VideoCreator
 from uploader import StealthUploader
-from health\_tracker import HealthTracker
-from synergy\_manager import SynergyManager
-from traffic\_pipeline import TrafficPipeline
-from system\_guardian import SystemGuardian
+from health_tracker import HealthTracker
+from synergy_manager import SynergyManager
+from traffic_pipeline import TrafficPipeline
+from system_guardian import SystemGuardian
 
 stats = {
     "total\_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
