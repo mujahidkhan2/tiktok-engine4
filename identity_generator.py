@@ -1,81 +1,40 @@
 import random
+import uuid
+import hashlib
 
 class IdentityGenerator:
     def __init__(self):
-        # Default Weights for Auto Mode
-        self.default_weights = {
-            "UK": 0.45,
-            "USA": 0.35,
-            "EU": 0.10,
-            "Other": 0.10
+        self.user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"
+        ]
+
+    def generate_device_fingerprint(self):
+        # رینڈم ڈیوائس آئی ڈی بنانا تاکہ ہر اکاؤنٹ کی شناخت الگ ہو
+        device_id = str(uuid.uuid4())
+        canvas_id = hashlib.sha256(str(random.random()).encode()).hexdigest()[:16]
+        return {
+            "device_id": device_id,
+            "canvas_id": canvas_id,
+            "user_agent": random.choice(self.user_agents),
+            "screen_res": random.choice(["1920x1080", "1366x768", "390x844", "414x896"])
         }
-        self.other_countries = ["PK", "SA", "AE", "BD", "IN"]
 
-    def get_random_country(self):
-        """Auto Mode: Returns country based on weights"""
-        r = random.random()
-        if r < self.default_weights["UK"]:
-            return "UK"
-        elif r < self.default_weights["UK"] + self.default_weights["USA"]:
-            return "USA"
-        elif r < self.default_weights["UK"] + self.default_weights["USA"] + self.default_weights["EU"]:
-            return "EU"
-        else:
-            return random.choice(self.other_countries)
-
-    def generate_identity(self, country=None):
-        """
-        Generates a single random identity.
-        If country is provided, it uses that; otherwise, it uses Auto Mode.
-        """
-        if country is None:
-            country = self.get_random_country()
-            
+    def create_stealth_profile(self, country):
+        # ملک کے حساب سے پروفائل سیٹنگز
         return {
             "country": country,
-            "device_id": f"DEV_{random.getrandbits(32)}",
-            "fingerprint": f"FP_{random.getrandbits(64)}",
-            "proxy_type": "Residential" if country in ["UK", "USA"] else "Datacenter"
+            "timezone": self._get_timezone(country),
+            "language": self._get_language(country),
+            "fingerprint": self.generate_device_fingerprint()
         }
 
-    def generate_batch(self, count, custom_specs=None):
-        """
-        Robust Batch Generator:
-        Handles: 
-        1. Simple count (Auto Mode)
-        2. Custom Specs (Manual Mode e.g., {"UK": 10, "USA": 5})
-        """
-        identities = []
-        
-        try:
-            # Case 1: Manual Mode (Specific countries and counts)
-            if custom_specs and isinstance(custom_specs, dict):
-                print(f"📦 Generating batch with custom specs: {custom_specs}")
-                for country, num in custom_specs.items():
-                    # Ensure 'num' is an integer to prevent crashes
-                    try:
-                        valid_num = int(num)
-                        for _ in range(valid_num):
-                            identities.append(self.generate_identity(country=country))
-                    except (ValueError, TypeError):
-                        print(f"⚠️ Skipping invalid number for {country}: {num}")
-                
-                # If for some reason no identities were created from specs, 
-                # fall back to auto-mode to prevent 500 error.
-                if not identities:
-                    for _ in range(count):
-                        identities.append(self.generate_identity())
-                        
-            # Case 2: Auto Mode (Only total count provided)
-            else:
-                print(f"📦 Generating batch in auto-mode for {count} accounts")
-                for _ in range(count):
-                    identities.append(self.generate_identity())
-                    
-        except Exception as e:
-            print(f"❌ Critical error in generate_batch: {e}")
-            # Final fallback: return at least some identities to prevent server crash
-            for _ in range(count if isinstance(count, int) else 1):
-                identities.append(self.generate_identity())
-        
-        return identities
+    def _get_timezone(self, country):
+        tz_map = {"UK": "GMT", "USA": "EST", "SAUDI": "AST", "UAE": "GST", "PK": "PKT", "IN": "IST"}
+        return tz_map.get(country, "UTC")
+
+    def _get_language(self, country):
+        lang_map = {"UK": "en-GB", "USA": "en-US", "SAUDI": "ar-SA", "UAE": "ar-AE", "PK": "ur-PK", "IN": "en-IN"}
+        return lang_map.get(country, "en-US")
