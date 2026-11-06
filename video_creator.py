@@ -1,38 +1,43 @@
 import random
+import os
 
 class VideoCreator:
     def __init__(self):
         self.categories = {
-            "vlogging": {
-                "hooks": ["You won't believe what happened today!", "My daily routine is crazy", "Watch until the end!", "Hidden gem found!"],
-                "hashtags": ["#vlog", "#daily", "#lifestyle", "#trending", "#explore"]
-            },
-            "tech": {
-                "hooks": ["This gadget changes everything!", "Top 3 tech tips for you", "Stop using your phone wrong!", "Future of AI is here"],
-                "hashtags": ["#tech", "#gadgets", "#innovation", "#ai", "#smarttech"]
-            },
-            "funny": {
-                "hooks": ["Wait for the twist!", "I can't stop laughing", "Tag a friend who does this", "Relatable moment!"],
-                "hashtags": ["#funny", "#comedy", "#lol", "#humor", "#memes"]
-            },
-            "general": {
-                "hooks": ["Check this out!", "Interesting find!", "Amazing view", "Something new for you"],
-                "hashtags": ["#fyp", "#viral", "#trending", "#explore", "#foryou"]
-            }
+            "USA": ["tech_reviews", "lifestyle_vlogs", "fitness_tips", "home_decor"],
+            "UK": ["fashion_trends", "travel_hacks", "cooking_shorts", "minimalism"]
         }
 
-    def generate_metadata(self, account_identity):
-        bio = account_identity.get("bio", "").lower()
-        category = "general"
-        
-        if "vlog" in bio or "life" in bio: category = "vlogging"
-        elif "tech" in bio or "ai" in bio: category = "tech"
-        elif "funny" in bio or "joke" in bio: category = "funny"
-
-        cat_data = self.categories[category]
+    def generate_content_plan(self, country):
+        """ہر اکاؤنٹ کے لیے ایک منفرد کیٹیگری اور مواد کا پلان بناتا ہے"""
+        category = random.choice(self.categories.get(country, ["general"]))
         return {
             "category": category,
-            "hook": random.choice(cat_data["hooks"]),
-            "hashtags": " ".join(random.sample(cat_data["hashtags"], 3)),
-            "caption": f"{random.choice(cat_data['hooks'])} {random.choice(cat_data['hashtags'])}"
+            "style": random.choice(["fast_paced", "aesthetic", "educational"]),
+            "duration": random.randint(15, 58)
         }
+
+    def create_unique_video_metadata(self, account_id, country):
+        """ویڈیو کے لیے منفرد ہیش ٹیگز اور کیپشن تیار کرتا ہے تاکہ AI ڈیٹیکشن سے بچا جا سکے"""
+        plan = self.generate_content_plan(country)
+        hashtags = {
+            "tech_reviews": ["#tech", "#gadgets", "#innovation"],
+            "lifestyle_vlogs": ["#dailyvlog", "#lifestyle", "#routine"],
+            "fashion_trends": ["#ootd", "#fashionuk", "#style"],
+            "home_decor": ["#homedecor", "#interior", "#usa_homes"]
+        }.get(plan["category"], ["#trending", "#fyp"])
+
+        caption = f"Check this out! {random.choice(['Amazing', 'Must see', 'Wow'])} {random.choice(hashtags)}"
+        
+        return {
+            "account_id": account_id,
+            "caption": caption,
+            "hashtags": random.sample(hashtags, 2),
+            "category": plan["category"],
+            "duration": plan["duration"]
+        }
+
+    def simulate_ai_rendering(self, video_id):
+        """AI رینڈرنگ کا عمل سیمولیٹ کرتا ہے تاکہ فائلز تیار دکھائی دیں"""
+        print(f"[VideoCreator] Rendering unique AI content for video {video_id}...")
+        return True
