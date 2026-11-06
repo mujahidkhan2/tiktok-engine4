@@ -1,35 +1,36 @@
 import time
 import random
-from account\_manager import AccountManager
-from identity\_generator import IdentityGenerator
+from account_manager import AccountManager
+from identity_generator import IdentityGenerator
 
 class TikTokEngine:
     def __init__(self):
-        self.acc\_manager = AccountManager()
-        self.id\_gen = IdentityGenerator()
+        self.acc_manager = AccountManager()
+        self.id_gen = IdentityGenerator()
 
-    def get\_identity(self, account\_id):
+    def get_identity(self, account_id):
         """اکاؤنٹ کی شناخت واپس کرتا ہے (Uploader کے لیے)"""
-        acc = self.acc\_manager.get\_all\_accounts().get(account\_id)
+        acc = self.acc_manager.get_all_accounts().get(account_id)
         return acc["profile"] if acc else {}
 
-    def create\_account(self, country):
+    def create_account(self, country):
         try:
-            profile = self.id\_gen.create\_stealth\_profile(country)
+            profile = self.id_gen.create_stealth_profile(country)
             username = f"user_{random.randint(100000, 999999)}_{country.lower()}"
             password = f"Pass_{random.randint(1000, 9999)}!_{country}"
             
+            # انسانی طرزِ عمل کے لیے وقفہ
             time.sleep(random.uniform(3, 7))
             
-            account\_data = {
+            account_data = {
                 "password": password,
                 "country": country,
                 "status": "warming",
                 "profile": profile,
-                "created\_at": time.strftime("%Y-%m-%d %H:%M:%S")
+                "created_at": time.strftime("%Y-%m-%d %H:%M:%S")
             }
             
-            self.acc\_manager.add\_account(username, account\_data)
+            self.acc_manager.add_account(username, account_data)
             return username
         except Exception as e:
             return None
