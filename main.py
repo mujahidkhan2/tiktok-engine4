@@ -2,7 +2,7 @@ import os
 import threading
 import time
 import random
-from flask import Flask, render\_template\_string, redirect, url\_for
+from flask import Flask, render_template_string, redirect, url_for
 
 # Import all modules
 from account\_manager import AccountManager
