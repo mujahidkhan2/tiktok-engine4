@@ -1,15 +1,14 @@
 import random
-import os
 
 class VideoCreator:
     def __init__(self):
         self.categories = {
             "USA": ["tech_reviews", "lifestyle_vlogs", "fitness_tips", "home_decor"],
-            "UK": ["fashion_trends", "travel_hacks", "cooking_shorts", "minimalism"]
+            "UK": ["fashion_trends", "travel_hacks", "cooking_shorts", "minimalism"],
+            "PK": ["food_vlogs", "street_life", "tech_urdu", "nature"]
         }
 
     def generate_content_plan(self, country):
-        """ہر اکاؤنٹ کے لیے ایک منفرد کیٹیگری اور مواد کا پلان بناتا ہے"""
         category = random.choice(self.categories.get(country, ["general"]))
         return {
             "category": category,
@@ -18,16 +17,16 @@ class VideoCreator:
         }
 
     def create_unique_video_metadata(self, account_id, country):
-        """ویڈیو کے لیے منفرد ہیش ٹیگز اور کیپشن تیار کرتا ہے تاکہ AI ڈیٹیکشن سے بچا جا سکے"""
         plan = self.generate_content_plan(country)
-        hashtags = {
+        hashtags_db = {
             "tech_reviews": ["#tech", "#gadgets", "#innovation"],
             "lifestyle_vlogs": ["#dailyvlog", "#lifestyle", "#routine"],
             "fashion_trends": ["#ootd", "#fashionuk", "#style"],
-            "home_decor": ["#homedecor", "#interior", "#usa_homes"]
-        }.get(plan["category"], ["#trending", "#fyp"])
-
-        caption = f"Check this out! {random.choice(['Amazing', 'Must see', 'Wow'])} {random.choice(hashtags)}"
+            "home_decor": ["#homedecor", "#interior", "#usa_homes"],
+            "food_vlogs": ["#foodie", "#streetfood", "#delicious"]
+        }
+        hashtags = hashtags_db.get(plan["category"], ["#trending", "#fyp"])
+        caption = f"{random.choice(['Amazing', 'Must see', 'Wow'])} {random.choice(hashtags)}!"
         
         return {
             "account_id": account_id,
@@ -36,8 +35,3 @@ class VideoCreator:
             "category": plan["category"],
             "duration": plan["duration"]
         }
-
-    def simulate_ai_rendering(self, video_id):
-        """AI رینڈرنگ کا عمل سیمولیٹ کرتا ہے تاکہ فائلز تیار دکھائی دیں"""
-        print(f"[VideoCreator] Rendering unique AI content for video {video_id}...")
-        return True
