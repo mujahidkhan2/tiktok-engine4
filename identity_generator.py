@@ -7,7 +7,6 @@ class IdentityGenerator:
         self.user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"
         ]
 
@@ -21,11 +20,18 @@ class IdentityGenerator:
         }
 
     def create_stealth_profile(self, country):
+        # Category-based Persona matching
+        categories = ["Tech", "Gaming", "Vlog", "Funny", "Education"]
+        selected_cat = random.choice(categories)
+        
         return {
             "country": country,
+            "category": selected_cat,
             "timezone": self._get_timezone(country),
             "language": self._get_language(country),
-            "fingerprint": self.generate_device_fingerprint()
+            "fingerprint": self.generate_device_fingerprint(),
+            "bio": f"Professional {selected_cat} enthusiast from {country}",
+            "profile_pic_type": f"{selected_cat}_themed_random"
         }
 
     def _get_timezone(self, country):
