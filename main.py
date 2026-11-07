@@ -82,10 +82,9 @@ class SmartDiagnosticEngine:
                         stats["active"] += 1
                         self.log(f"✅ Account Created: {account_id} ({country})")
                         
-                        # Human-like behavior: not every account does everything at once
                         self.modules['scheduler'].human_sleep_pattern()
 
-                        if random.random() > 0.2: # 80% chance to upload immediately
+                        if random.random() > 0.2: 
                             vid_meta = self.modules['video_gen'].create_unique_video_metadata(account_id, country)
                             if self.modules['uploader'].upload_video(account_id, vid_meta):
                                 self.log(f"📤 Stealth Upload Success: {account_id}")
@@ -147,4 +146,72 @@ DASHBOARD_HTML = """
             UK: <input type="number" name="UK" value="0"> 
             USA: <input type="number" name="USA" value="0"> 
             PK: <input type="number" name="PK" value="0"> 
-            Other: <input type="text" name="OtherCountry" placeholder
+            Other: <input type="text" name="OtherCountry" placeholder="Country Code">
+            <input type="number" name="OtherCount" placeholder="Count" value="0">
+            <button type="submit" class="btn" style="background:#00ffcc;">سسٹم شروع کریں</button>
+        </form>
+    </div>
+
+    <div class="grid">
+        <div class="card"><h3>کل اکاؤنٹس</h3><p>{{total}}</p></div>
+        <div class="card"><h3>ایکٹو</h3><p>{{active}}</p></div>
+        <div class="card"><h3>شاپ اہل</h3><p>{{eligible}}</p></div>
+        <div class="card"><h3>ٹرمینیٹڈ</h3><p>{{terminated}}</p></div>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar"></div>
+        <div class="progress-text">پروگریس: {{progress}}%</div>
+    </div>
+
+    <div class="log-box">
+        {% for log in logs %}
+            <div>{{ log }}</div>
+        {% endfor %}
+    </div>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(
+        DASHBOARD_HTML, 
+        total=stats["total_accounts"], 
+        active=stats["active"], 
+        eligible=stats["shop_eligible"], 
+        terminated=stats["terminated"], 
+        progress=stats["progress"], 
+        current_action=stats["current_action"], 
+        logs=stats["logs"]
+    )
+
+@app.route('/start', methods=['POST'])
+def start():
+    config = {
+        "UK": int(request.form.get('UK', 0)),
+        "USA": int(request.form.get('USA', 0)),
+        "PK": int(request.form.get('PK', 0))
+    }
+    other_country = request.form.get('OtherCountry')
+    other_count = int(request.form.get('OtherCount', 0))
+    if other_country and other_count > 0:
+        config[other_country] = other_count
+    
+    threading.Thread(target=master_bot.run_safe_workflow, args=(config,)).start()
+    return redirect(url_for('index'))
+
+@app.route('/kill')
+def kill():
+    master_bot.is_running = False
+    stats["current_action"] = "🛑 SYSTEM KILLED BY USER"
+    master_bot.log("🚨 Emergency Kill Switch Activated!")
+    return redirect(url_for('index'))
+
+@app.route('/diagnostics')
+def diagnostics():
+    return f"<h1>Intelligence Hub</h1><p>Critical Errors: {stats['critical_errors']}</p><a href='/'>Back</a>"
+
+if __name__ == '__main__':
+    # Railway requires port 8080 and 0.0.0.0
+    app.run(host='0.0.0.0', port=8080)
