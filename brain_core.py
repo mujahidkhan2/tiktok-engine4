@@ -8,6 +8,7 @@ class TheBrain:
         self.SECRET_KEY = "OWNER_MASTER_KEY_2026"
         self.project_root = os.getcwd()
         self.version = "v3.0_Autonomous_GodMode"
+        self.master_bot = None # This will be linked in app.py
         
         logging.basicConfig(filename='brain_activity.log', level=logging.INFO, 
                             format='%(asctime)s - BRAIN - %(message)s')
@@ -49,12 +50,30 @@ class TheBrain:
 
     def restart_server(self):
         try:
-            self.execute_system_command("touch main.py")
+            # Railway uses Procfile or main.py; triggering a restart
+            self.execute_system_command("touch main.py") 
             return "Server restart triggered. System is rebooting..."
         except Exception as e:
             return f"Restart failed: {str(e)}"
 
     def self_evaluate(self):
         return f"Brain Version: {self.version} | Status: Autonomous | Power: 100%"
+
+    def execute_command(self, text):
+        text = text.lower()
+        if "restart" in text:
+            return self.restart_server()
+        elif "status" in text or "evaluate" in text:
+            return self.self_evaluate()
+        elif "stop" in text or "kill" in text:
+            if self.master_bot:
+                self.master_bot.is_running = False
+                return "Engine stopped by The Brain."
+            return "Engine not found."
+        elif "scan" in text:
+            struct = self.scan_project_structure()
+            return f"Project scanned. Found {len(struct)} files."
+        else:
+            return f"Command received: '{text}'. I am processing this within the matrix."
 
 brain = TheBrain()
