@@ -4,9 +4,11 @@ import time
 import random
 import json
 from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, render_template_string, redirect, url_for, request, jsonify
+from flask import Flask, render_template_string, render_template, redirect, url_for, request, jsonify
 
-# Modules Import
+# ==============================================================================
+# MODULES IMPORT
+# ==============================================================================
 try:
     from account_manager import AccountManager
     from identity_generator import IdentityGenerator
@@ -18,10 +20,15 @@ try:
     from synergy_manager import SynergyManager
     from traffic_pipeline import TrafficPipeline
     from system_guardian import SystemGuardian
+    # New Brain Modules
+    from brain_core import brain
+    from brain_security import security_shield
 except ImportError as e:
     print(f"Critical Import Error: {e}")
 
-# Global System Statistics
+# ==============================================================================
+# GLOBAL SYSTEM STATISTICS
+# ==============================================================================
 stats = {
     "total_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
     "shop_eligible": 0, "current_action": "System Standby", 
@@ -30,6 +37,9 @@ stats = {
 
 app = Flask(__name__)
 
+# ==============================================================================
+# GHOST MATRIX CORE ENGINE
+# ==============================================================================
 class GhostMatrixEngine:
     def __init__(self):
         self.is_running = False
@@ -56,7 +66,6 @@ class GhostMatrixEngine:
                 'health': HealthTracker(), 'synergy': SynergyManager(engine),
                 'traffic': TrafficPipeline(engine)
             }
-            # Load existing accounts from DB to avoid data loss
             all_accs = self.modules['acc_manager'].get_all_accounts()
             stats["total_accounts"] = len(all_accs)
             self.log(f"🚀 System Restored: {len(all_accs)} accounts loaded from DB.", "SUCCESS")
@@ -75,7 +84,6 @@ class GhostMatrixEngine:
 
             while self.is_running:
                 if target_url:
-                    # Human-like Boosting Behavior
                     behavior = random.choice(['full_support', 'casual_like', 'ghost_view'])
                     self.log(f"{acc_id} performing {behavior} on target", "INFO")
                     self.modules['engine'].execute_boost_action(acc_id, target_url, behavior)
@@ -92,7 +100,7 @@ class GhostMatrixEngine:
             self.log(f"Lifecycle Error: {str(e)}", "ERROR")
 
     def run_parallel_workflow(self, country_config, target_url=None):
-        self.is_running = True
+        self.is_// running = True
         all_tasks = []
         for country, count in country_config.items():
             for _ in range(count): all_tasks.append(country)
@@ -105,6 +113,9 @@ class GhostMatrixEngine:
 
 master_bot = GhostMatrixEngine()
 
+# ==============================================================================
+# DASHBOARD HTML
+# ==============================================================================
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
@@ -179,6 +190,10 @@ DASHBOARD_HTML = """
 </html>
 """
 
+# ==============================================================================
+# ROUTES
+# ==============================================================================
+
 @app.route('/')
 def index():
     return render_template_string(DASHBOARD_HTML, total=stats["total_accounts"], active=stats["active"], eligible=stats["shop_eligible"], terminated=stats["terminated"], current_action=stats["current_action"], logs=stats["logs"])
@@ -200,20 +215,15 @@ def kill():
     stats["current_action"] = "🛑 EMERGENCY STOP"
     return redirect(url_for('index'))
 
-@app.route('/brain')
-def brain():
-    return "<h1 style='color:purple;'>The Brain Interface</h1><p>Boss, the system is ready. I am monitoring all files.</p><a href='/'>Back</a>"
-
 @app.route('/inventory')
 def inventory():
     accs = master_bot.modules['acc_manager'].get_all_accounts()
-    html = "<h1>Account Inventory</h1><table border='1' style='color:white; background:black; width:100%'><tr><th>User</th><th>Country</th><th>Status</th></tr>"
+    html = "<h1 style='color:white;'>Account Inventory</h1><table border='1' style='color:white; background:black; width:100%'><tr><th>User</th><th>Country</th><th>Status</th></tr>"
     for u, d in accs.items(): html += f"<tr><td>{u}</td><td>{d['country']}</td><td>{d['status']}</td></tr>"
-    html += "</table><br><a href='/'>Back</a>"
-    return html# --- ADD THIS TO app.py ---
-from brain_core import brain
-from brain_security import security_shield
+    html += "</table><br><a href='/' style='color:green;'>Back</a>"
+    return html
 
+# --- THE BRAIN ROUTES ---
 @app.route('/brain')
 def brain_page():
     return render_template('brain_chat.html')
@@ -224,13 +234,16 @@ def brain_execute():
     user_key = data.get('key')
     command = data.get('command')
     
-    # سیکیورٹی چیک
+    # Security Check via brain_security.py
     if not security_shield.verify_token("owner", user_key):
-        return {"status": "error", "response": "Access Denied: Invalid Security Token!"}
+        return jsonify({"status": "error", "response": "Access Denied: Invalid Security Token!"})
     
-    # دماغ سے جواب لینا
+    # Command processing via brain_core.py
     response = brain.process_owner_command(user_key, command)
-    return {"status": "success", "response": response}
+    return jsonify({"status": "success", "response": response})
 
+# ==============================================================================
+# MAIN ENTRY POINT
+# ==============================================================================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
