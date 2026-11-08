@@ -21,10 +21,9 @@ try:
 except ImportError as e:
     print(f"Critical Import Error: {e}")
 
-# Global System Statistics
 stats = {
     "total_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
-    "shop_eligible": 0, "progress": 0, "current_action": "System Standby", 
+    "shop_eligible": 0, "current_action": "System Standby", 
     "logs": [], "critical_errors": [], "viral_accounts": [], "risk_accounts": []
 }
 
@@ -46,12 +45,6 @@ class GhostMatrixEngine:
         stats["logs"].insert(0, formatted_msg)
         if len(stats["logs"]) > 100: stats["logs"].pop()
 
-    def report_issue(self, file_name, error, solution):
-        issue = f"❌ {file_name} | {error} | Sol: {solution}"
-        if issue not in stats["critical_errors"]:
-            stats["critical_errors"].append(issue)
-            self.log(f"SENTRY ALERT: {file_name} needs attention!", "ERROR")
-
     def load_modules(self):
         try:
             engine = TikTokEngine()
@@ -62,11 +55,11 @@ class GhostMatrixEngine:
                 'health': HealthTracker(), 'synergy': SynergyManager(engine),
                 'traffic': TrafficPipeline(engine)
             }
-            self.log("🚀 Ghost Matrix v4.0 High-Speed Modules Loaded.", "SUCCESS")
+            self.log("🚀 Ghost Matrix v4.0 Command Center Active.", "SUCCESS")
         except Exception as e:
             self.log(f"Module Load Failure: {e}", "ERROR")
 
-    def account_lifecycle(self, country):
+    def account_lifecycle(self, country, target_url=None, boost_config=None):
         try:
             time.sleep(random.randint(1, 300))
             acc_id = self.modules['engine'].create_account(country)
@@ -74,39 +67,48 @@ class GhostMatrixEngine:
 
             stats["total_accounts"] += 1
             stats["active"] += 1
-            self.log(f"Account Created: {acc_id} ({country})", "SUCCESS")
+            self.log(f"Account Active: {acc_id} ({country})", "SUCCESS")
 
-            while self.is_running:
-                action = random.choice(['scroll', 'like', 'comment', 'upload', 'sleep'])
-                action_time = random.randint(10, 600) 
-                time.sleep(action_time)
-
-                if action == 'upload':
-                    vid_meta = self.modules['video_gen'].create_unique_video_metadata(acc_id, country)
-                    if self.modules['uploader'].upload_video(acc_id, vid_meta):
-                        self.log(f"Stealth Upload: {acc_id} -> {country}", "SUCCESS")
-                elif action == 'sleep':
-                    sleep_duration = random.randint(1800, 14400)
-                    self.log(f"Account {acc_id} sleeping for {sleep_duration//60}min", "INFO")
-                    time.sleep(sleep_duration)
+            while self.is_//running:
+                # If boosting a specific URL, use Human-Like Booster Logic
+                if target_url and boost_config:
+                    behavior = random.choice(boost_config['behaviors'])
+                    self.log(f"Account {acc_id} performing {behavior['action']} on target", "INFO")
+                    time.sleep(random.randint(30, 300))
+                    # Here the engine will execute the specific behavior (Like, Comment, etc)
+                    self.modules['engine'].execute_boost_action(acc_id, target_url, behavior['action'])
+                else:
+                    # Regular Warming Cycle
+                    action = random.choice(['scroll', 'like', 'comment', 'upload', 'sleep'])
+                    time.sleep(random.randint(10, 600))
+                    if action == 'upload':
+                        vid_meta = self.modules['video_gen'].create_unique_video_metadata(acc_id, country)
+                        self.modules['uploader'].upload_video(acc_id, vid_meta)
+                    elif action == 'sleep':
+                        time.sleep(random.randint(1800, 14400))
                 
                 if self.modules['health'].check_shop_eligibility(acc_id):
                     stats["shop_eligible"] += 1
-                    self.log(f"Shop Eligible: {acc_id} is ready!", "SUCCESS")
         except Exception as e:
-            self.log(f"LifeCycle Error {country}: {str(e)}", "ERROR")
+            self.log(f"LifeCycle Error: {str(e)}", "ERROR")
 
-    def run_parallel_workflow(self, country_config):
+    def run_parallel_workflow(self, country_config, target_url=None):
         self.is_running = True
+        boost_config = {
+            'behaviors': [
+                {'action': 'full_support', 'weight': 0.2}, # Watch full -> Like -> Comment -> Follow
+                {'action': 'casual_like', 'weight': 0.5},   # Watch partial -> Like
+                {'action': 'ghost_view', 'weight': 0.3},    # Only watch
+            ]
+        }
         all_tasks = []
         for country, count in country_config.items():
-            for _ in range(count):
-                all_tasks.append(country)
+            for _ in range(count): all_tasks.append(country)
 
-        total = len(all_tasks)
-        stats["current_action"] = f"Executing Parallel Workflow ({total} Accounts)"
+        stats["current_action"] = f"Executing Parallel Workflow ({len(all_tasks)} Accounts)"
         with ThreadPoolExecutor(max_workers=100) as executor:
-            executor.map(self.account_lifecycle, all_tasks)
+            # Pass target_url and boost_config to the lifecycle
+            executor.map(lambda c: self.account_lifecycle(c, target_url, boost_config), all_tasks)
         self.is_running = False
         stats["current_action"] = "Workflow Completed"
 
@@ -117,45 +119,38 @@ DASHBOARD_HTML = """
 <html lang="ur" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghost Matrix v4.0 | Command Center</title>
+    <title>GHOST MATRIX v4 | Command Center</title>
     <style>
         :root { --neon-green: #00ffcc; --neon-red: #ff4444; --dark-bg: #0a0a0a; --card-bg: #161616; }
-        body { background: var(--dark-bg); color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; }
+        body { background: var(--dark-bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; }
         .sidebar { width: 260px; background: #000; height: 100vh; border-left: 1px solid #333; position: fixed; right: 0; top: 0; padding: 20px; box-sizing: border-box; }
-        .sidebar h2 { color: var(--neon-green); font-size: 20px; margin-bottom: 30px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .sidebar h2 { color: var(--neon-green); text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
         .nav-btn { display: block; width: 100%; padding: 12px; margin-bottom: 10px; background: #111; border: 1px solid #333; color: #ccc; text-align: right; border-radius: 8px; cursor: pointer; text-decoration: none; transition: 0.3s; }
         .nav-btn:hover { background: var(--neon-green); color: #000; }
-        .nav-btn.active { background: var(--neon-green); color: #000; font-weight: bold; }
         .main-content { margin-right: 260px; padding: 30px; width: calc(100% - 260px); }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .status-pill { background: #222; padding: 5px 15px; border-radius: 20px; border: 1px solid var(--neon-green); color: var(--neon-green); font-size: 14px; }
+        .status-pill { background: #222; padding: 5px 15px; border-radius: 20px; border: 1px solid var(--neon-green); color: var(--neon-green); }
         .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; transition: 0.3s; }
-        .card:hover { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,204,0.1); }
-        .card h3 { margin: 0; font-size: 16px; color: #888; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; }
         .card p { font-size: 32px; font-weight: bold; color: var(--neon-green); margin: 10px 0 0 0; }
         .panel { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid #444; margin-bottom: 30px; }
-        .panel h3 { margin-top: 0; color: #fff; border-right: 4px solid var(--neon-green); padding-right: 10px; }
         .input-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        input { background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; width: 100px; }
-        .alert-box { background: #2a0000; border: 1px solid var(--neon-red); color: #ffcccc; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-family: monospace; }
-        .log-container { background: #000; border: 1px solid #333; border-radius: 15px; padding: 20px; height: 400px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.6; }
-        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #111; padding-bottom: 2px; }
-        .btn { padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; text-decoration: none; display: inline-block; }
+        input { background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; }
+        .log-container { background: #000; border: 1px solid #333; border-radius: 15px; padding: 20px; height: 300px; overflow-y: auto; font-family: monospace; }
+        .btn { padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-primary { background: var(--neon-green); color: #000; }
         .btn-danger { background: var(--neon-red); color: #fff; }
-        .btn-primary:hover { opacity: 0.8; transform: translateY(-2px); }
+        .btn-brain { background: #8a2be2; color: #fff; box-shadow: 0 0 10px #8a2be2; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>GHOST MATRIX v4</h2>
-        <a href="/" class="nav-btn active">🏠 مین کمانڈ سینٹر</a>
+        <a href="/" class="nav-btn">🏠 مین کمانڈ سینٹر</a>
+        <a href="/brain" class="nav-btn" style="color: #8a2be2;">🧠 THE BRAIN (منشی)</a>
         <a href="/health" class="nav-btn">🏥 ہیلتھ ٹریکر</a>
         <a href="/viral" class="nav-btn">🚀 ویریل لسٹ</a>
-        <a href="/shop" class="nav-btn">🛒 شاپ ایلیجیبلٹی</a>
-        <a href="/diagnostics" class="nav-btn">🛠️ سسٹم ڈائیگنوسٹکس</a>
+        <a href="/shop" class="nav-btn">🛒 شاپ ہب</a>
     </div>
     <div class="main-content">
         <div class="header">
@@ -163,35 +158,24 @@ DASHBOARD_HTML = """
                 <h1 style="margin:0; color:#fff;">Command Center <span style="font-size:16px; color:var(--neon-green);">v4.0 Stealth Engine</span></h1>
                 <p style="margin:5px 0 0 0; color:#888;">سسٹم اسٹیٹس: <span class="status-pill">{{current_action}}</span></p>
             </div>
-            <a href="/kill" class="btn btn-danger" style="font-size:18px;">EMERGENCY KILL 🛑</a>
+            <a href="/kill" class="btn btn-danger">EMERGENCY KILL 🛑</a>
         </div>
-        {% if errors %}
-        <div class="alert-box">
-            <strong>🚨 System Guardian Alert:</strong><br>
-            {% for err in errors %} <div>{{ err }}</div> {% endfor %}
-        </div>
-        {% endif %}
         <div class="grid">
             <div class="card"><h3>کل اکاؤنٹس</h3><p>{{total}}</p></div>
-            <div class="card"><h3>ایکٹو (Parallel)</h3><p>{{active}}</p></div>
+            <div class="card"><h3>ایکٹو</h3><p>{{active}}</p></div>
             <div class="card"><h3>شاپ اہل</h3><p>{{eligible}}</p></div>
             <div class="card"><h3>ٹرمینیٹڈ</h3><p>{{terminated}}</p></div>
         </div>
         <div class="panel">
-            <h3>🚀 ریکروٹمنٹ اور بوسٹنگ (Parallel Engine)</h3>
+            <h3>🚀 بوسٹنگ اور ریکروٹمنٹ (Targeted Engine)</h3>
             <form action="/start" method="post" class="input-group">
-                UK: <input type="number" name="UK" value="0"> 
-                USA: <input type="number" name="USA" value="0"> 
-                PK: <input type="number" name="PK" value="0"> 
-                Other: <input type="text" name="OtherCountry" placeholder="Code">
-                <input type="number" name="OtherCount" placeholder="Qty" value="0">
+                <input type="text" name="target_url" placeholder="Target URL (Optional)" style="width: 300px;">
+                UK: <input type="number" name="UK" value="0"> USA: <input type="number" name="USA" value="0"> PK: <input type="number" name="PK" value="0">
                 <button type="submit" class="btn btn-primary">پروجیکٹ لانچ کریں ⚡</button>
             </form>
         </div>
         <div class="log-container">
-            {% for log in logs %}
-                <div class="log-entry">{{ log }}</div>
-            {% endfor %}
+            {% for log in logs %} <div class="log-entry">{{ log }}</div> {% endfor %}
         </div>
     </div>
 </body>
@@ -200,49 +184,24 @@ DASHBOARD_HTML = """
 
 @app.route('/')
 def index():
-    return render_template_string(
-        DASHBOARD_HTML, 
-        total=stats["total_accounts"], 
-        active=stats["active"], 
-        eligible=stats["shop_eligible"], 
-        terminated=stats["terminated"], 
-        current_action=stats["current_action"], 
-        logs=stats["logs"],
-        errors=stats["critical_errors"]
-    )
+    return render_template_string(DASHBOARD_HTML, total=stats["total_accounts"], active=stats["active"], eligible=stats["shop_eligible"], terminated=stats["terminated"], current_action=stats["current_action"], logs=stats["logs"])
 
 @app.route('/start', methods=['POST'])
 def start():
-    config = {
-        "UK": int(request.form.get('UK', 0)),
-        "USA": int(request.form.get('USA', 0)),
-        "PK": int(request.form.get('PK', 0))
-    }
-    other_country = request.form.get('OtherCountry')
-    other_count = int(request.form.get('OtherCount', 0))
-    if other_country and other_count > 0:
-        config[other_country] = other_count
-    
-    threading.Thread(target=master_bot.run_parallel_workflow, args=(config,)).start()
+    target_url = request.form.get('target_url')
+    config = {"UK": int(request.form.get('UK', 0)), "USA": int(request.form.get('USA', 0)), "PK": int(request.form.get('PK', 0))}
+    threading.Thread(target=master_bot.run_parallel_workflow, args=(config, target_url)).start()
     return redirect(url_for('index'))
 
 @app.route('/kill')
 def kill():
     master_bot.is_running = False
-    stats["current_action"] = "🛑 EMERGENCY STOP ACTIVATED"
-    master_bot.log("Emergency Kill Switch Activated! Stopping all threads...", "ERROR")
+    stats["current_action"] = "🛑 EMERGENCY STOP"
     return redirect(url_for('index'))
 
-@app.route('/diagnostics')
-def diagnostics():
-    return f"<h1>Intelligence Hub</h1><p>Critical Issues: {stats['critical_errors']}</p><a href='/'>Back</a>"
-
-@app.route('/health')
-def health(): return "<h1>Health Tracker Page</h1><a href='/'>Back</a>"
-@app.route('/viral')
-def viral(): return "<h1>Viral Accounts Vault</h1><a href='/'>Back</a>"
-@app.route('/shop')
-def shop(): return "<h1>Shop Eligibility Hub</h1><a href='/'>Back</a>"
+@app.route('/brain')
+def brain():
+    return "<h1 style='color:purple;'>The Brain Interface</h1><p>Welcome, Boss. Give me an order to update the system.</p><a href='/'>Back</a>"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
