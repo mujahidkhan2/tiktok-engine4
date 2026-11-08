@@ -2,52 +2,36 @@ import os
 import threading
 import time
 import random
-import json
 from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, render_template_string, render_template, redirect, url_for, request, jsonify
+from flask import Flask, render_template, render_template_string, redirect, url_for, request, jsonify
 
-# ==============================================================================
-# MODULES IMPORT
-# ==============================================================================
+# Import Brain Modules
 try:
-    from account_manager import AccountManager
-    from identity_generator import IdentityGenerator
-    from engine import TikTokEngine
-    from scheduler import Scheduler
-    from video_creator import VideoCreator
-    from uploader import StealthUploader
-    from health_tracker import HealthTracker
-    from synergy_manager import SynergyManager
-    from traffic_pipeline import TrafficPipeline
-    from system_guardian import SystemGuardian
-    # New Brain Modules
     from brain_core import brain
     from brain_security import security_shield
+    from engine import TikTokEngine
 except ImportError as e:
     print(f"Critical Import Error: {e}")
 
-# ==============================================================================
-# GLOBAL SYSTEM STATISTICS
-# ==============================================================================
+app = Flask(__name__)
+
+# Global Stats
 stats = {
     "total_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
     "shop_eligible": 0, "current_action": "System Standby", 
     "logs": [], "critical_errors": [], "viral_accounts": [], "risk_accounts": []
 }
 
-app = Flask(__name__)
-
-# ==============================================================================
-# GHOST MATRIX CORE ENGINE
-# ==============================================================================
 class GhostMatrixEngine:
     def __init__(self):
         self.is_running = False
-        self.load_modules()
         try:
-            self.guardian = SystemGuardian(self)
+            self.engine = TikTokEngine()
+            # Load initial stats
+            all_accs = self.engine.acc_manager.get_all_accounts()
+            stats["total_accounts"] = len(all_accs)
         except Exception as e:
-            self.log(f"Guardian Init Error: {e}", "ERROR")
+            self.log(f"Init Error: {e}", "ERROR")
 
     def log(self, message, level="INFO"):
         timestamp = time.strftime("%H:%M:%S")
@@ -56,28 +40,25 @@ class GhostMatrixEngine:
         stats["logs"].insert(0, formatted_msg)
         if len(stats["logs"]) > 100: stats["logs"].pop()
 
-    def load_modules(self):
-        try:
-            engine = TikTokEngine()
-            self.modules = {
-                'engine': engine, 'acc_manager': engine.acc_manager,
-                'id_gen': engine.id_gen, 'scheduler': Scheduler(),
-                'video_gen': VideoCreator(), 'uploader': StealthUploader(engine),
-                'health': HealthTracker(), 'synergy': SynergyManager(engine),
-                'traffic': TrafficPipeline(engine)
-            }
-            all_accs = self.modules['acc_manager'].get_all_accounts()
-            stats["total_accounts"] = len(all_accs)
-            self.log(f"🚀 System Restored: {len(all_accs)} accounts loaded from DB.", "SUCCESS")
-        except Exception as e:
-            self.log(f"Module Load Failure: {e}", "ERROR")
+    def run_parallel_workflow(self, config, target_url=None):
+        self.is_running = True
+        stats["current_action"] = "Executing Workflow..."
+        
+        all_tasks = []
+        for country, count in config.items():
+            for _ in range(count): all_tasks.append(country)
 
-    def account_lifecycle(self, country, target_url=None):
+        with ThreadPoolExecutor(max_workers=20) as executor: # Reduced for Free Server stability
+            executor.map(lambda c: self.account_lifecycle(c, target_url), all_tasks)
+        
+        self.is_running = False
+        stats["current_action"] = "Workflow Completed"
+
+    def account_lifecycle(self, country, target_url):
         try:
-            time.sleep(random.randint(1, 300))
-            acc_id = self.modules['engine'].create_account(country)
+            acc_id = self.engine.create_account(country)
             if not acc_id: return
-
+            
             stats["total_accounts"] += 1
             stats["active"] += 1
             self.log(f"Account Active: {acc_id} ({country})", "SUCCESS")
@@ -85,37 +66,16 @@ class GhostMatrixEngine:
             while self.is_running:
                 if target_url:
                     behavior = random.choice(['full_support', 'casual_like', 'ghost_view'])
-                    self.log(f"{acc_id} performing {behavior} on target", "INFO")
-                    self.modules['engine'].execute_boost_action(acc_id, target_url, behavior)
-                    time.sleep(random.randint(60, 600))
+                    self.engine.execute_boost_action(acc_id, target_url, behavior)
+                    time.sleep(random.randint(300, 900))
                 else:
-                    action = random.choice(['scroll', 'like', 'comment', 'upload', 'sleep'])
-                    time.sleep(random.randint(10, 600))
-                    if action == 'upload':
-                        vid_meta = self.modules['video_gen'].create_unique_video_metadata(acc_id, country)
-                        self.modules['uploader'].upload_video(acc_id, vid_meta)
-                    elif action == 'sleep':
-                        time.sleep(random.randint(1800, 14400))
+                    time.sleep(random.randint(600, 3600))
         except Exception as e:
             self.log(f"Lifecycle Error: {str(e)}", "ERROR")
 
-    def run_parallel_workflow(self, country_config, target_url=None):
-        self.is_// running = True
-        all_tasks = []
-        for country, count in country_config.items():
-            for _ in range(count): all_tasks.append(country)
-
-        stats["current_action"] = f"Executing {len(all_tasks)} Accounts Workflow"
-        with ThreadPoolExecutor(max_workers=100) as executor:
-            executor.map(lambda c: self.account_lifecycle(c, target_url), all_tasks)
-        self.is_running = False
-        stats["current_action"] = "Workflow Completed"
-
 master_bot = GhostMatrixEngine()
 
-# ==============================================================================
-# DASHBOARD HTML
-# ==============================================================================
+# HTML for Dashboard
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
@@ -143,7 +103,6 @@ DASHBOARD_HTML = """
         .btn { padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-primary { background: var(--neon-green); color: #000; }
         .btn-danger { background: var(--neon-red); color: #fff; }
-        .btn-brain { background: var(--neon-purple); color: #fff; box-shadow: 0 0 10px var(--neon-purple); }
     </style>
 </head>
 <body>
@@ -151,9 +110,6 @@ DASHBOARD_HTML = """
         <h2>GHOST MATRIX v4</h2>
         <a href="/" class="nav-btn">🏠 مین کمانڈ سینٹر</a>
         <a href="/brain" class="nav-btn" style="color: var(--neon-purple);">🧠 THE BRAIN (منشی)</a>
-        <a href="/health" class="nav-btn">🏥 ہیلتھ ٹریکر</a>
-        <a href="/viral" class="nav-btn">🚀 ویریل لسٹ</a>
-        <a href="/shop" class="nav-btn">🛒 شاپ ہب</a>
         <a href="/inventory" class="nav-btn">📦 اکاؤنٹ انوینٹری</a>
     </div>
     <div class="main-content">
@@ -171,15 +127,13 @@ DASHBOARD_HTML = """
             <div class="card"><h3>ٹرمینیٹڈ</h3><p>{{terminated}}</p></div>
         </div>
         <div class="panel">
-            <h3>🚀 بوسٹنگ اور ریکروٹمنٹ (Targeted Engine)</h3>
+            <h3>🚀 بوسٹنگ اور ریکروٹمنٹ</h3>
             <form action="/start" method="post" class="input-group">
-                <input type="text" name="target_url" placeholder="Target URL (For Boosting)" style="width: 350px;">
-                UK: <input type="number" name="UK" value="0" style="width: 60px;"> 
-                USA: <input type="number" name="USA" value="0" style="width: 60px;"> 
-                PK: <input type="number" name="PK" value="0" style="width: 60px;"> 
-                Custom: <input type="text" name="OtherCountry" placeholder="Code" style="width: 70px;">
-                <input type="number" name="OtherCount" placeholder="Qty" style="width: 60px;">
-                <button type="submit" class="btn btn-primary">پروجیکٹ لانچ کریں ⚡</button>
+                <input type="text" name="target_url" placeholder="Target URL" style="width: 300px;">
+                UK: <input type="number" name="UK" value="0" style="width: 50px;"> 
+                USA: <input type="number" name="USA" value="0" style="width: 50px;"> 
+                PK: <input type="number" name="PK" value="0" style="width: 50px;"> 
+                <button type="submit" class="btn btn-primary">لانچ کریں ⚡</button>
             </form>
         </div>
         <div class="log-container">
@@ -190,10 +144,6 @@ DASHBOARD_HTML = """
 </html>
 """
 
-# ==============================================================================
-# ROUTES
-# ==============================================================================
-
 @app.route('/')
 def index():
     return render_template_string(DASHBOARD_HTML, total=stats["total_accounts"], active=stats["active"], eligible=stats["shop_eligible"], terminated=stats["terminated"], current_action=stats["current_action"], logs=stats["logs"])
@@ -202,10 +152,6 @@ def index():
 def start():
     target_url = request.form.get('target_url')
     config = {"UK": int(request.form.get('UK', 0)), "USA": int(request.form.get('USA', 0)), "PK": int(request.form.get('PK', 0))}
-    other_country = request.form.get('OtherCountry')
-    other_count = int(request.form.get('OtherCount', 0))
-    if other_country and other_count > 0: config[other_country] = other_count
-    
     threading.Thread(target=master_bot.run_parallel_workflow, args=(config, target_url)).start()
     return redirect(url_for('index'))
 
@@ -217,16 +163,18 @@ def kill():
 
 @app.route('/inventory')
 def inventory():
-    accs = master_bot.modules['acc_manager'].get_all_accounts()
+    accs = master_bot.engine.acc_manager.get_all_accounts()
     html = "<h1 style='color:white;'>Account Inventory</h1><table border='1' style='color:white; background:black; width:100%'><tr><th>User</th><th>Country</th><th>Status</th></tr>"
     for u, d in accs.items(): html += f"<tr><td>{u}</td><td>{d['country']}</td><td>{d['status']}</td></tr>"
     html += "</table><br><a href='/' style='color:green;'>Back</a>"
     return html
 
-# --- THE BRAIN ROUTES ---
 @app.route('/brain')
 def brain_page():
-    return render_template('brain_chat.html')
+    try:
+        return render_template('brain_chat.html')
+    except Exception as e:
+        return f"Error: Template not found. Make sure 'brain_chat.html' is inside the 'templates' folder. <br>Details: {e}"
 
 @app.route('/brain/execute', methods=['POST'])
 def brain_execute():
@@ -234,16 +182,11 @@ def brain_execute():
     user_key = data.get('key')
     command = data.get('command')
     
-    # Security Check via brain_security.py
     if not security_shield.verify_token("owner", user_key):
-        return jsonify({"status": "error", "response": "Access Denied: Invalid Security Token!"})
+        return jsonify({"status": "error", "response": "ACCESS DENIED: Invalid Master Key!"})
     
-    # Command processing via brain_core.py
     response = brain.process_owner_command(user_key, command)
     return jsonify({"status": "success", "response": response})
 
-# ==============================================================================
-# MAIN ENTRY POINT
-# ==============================================================================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
