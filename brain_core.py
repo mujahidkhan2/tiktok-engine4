@@ -88,7 +88,7 @@ class TheBrain:
         for cmd in commands:
             self.execute_system_command(cmd)
         logging.info("Server auto-restarted by The Brain.")
-        return "Server restarted successfully."    def process_owner_command(self, key, command):
+        return "Server restarted successfully."    def process_owner_command(self, key, command):Xo01;)5/#bren,45
         """مالک کی کمانڈ کو پروسیس کرنا"""
         if not self.verify_owner(key):
             return "ACCESS DENIED: Unauthorized Access Attempt Logged."
