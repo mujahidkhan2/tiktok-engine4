@@ -4,7 +4,7 @@ import time
 import random
 import json
 from concurrent.futures import ThreadPoolExecutor
-from flask import Flask, render_template_string, redirect, url_for, request
+from flask import Flask, render_template_string, redirect, url_for, request, jsonify
 
 # Modules Import
 try:
@@ -21,6 +21,7 @@ try:
 except ImportError as e:
     print(f"Critical Import Error: {e}")
 
+# Global System Statistics
 stats = {
     "total_accounts": 0, "active": 0, "paused": 0, "terminated": 0,
     "shop_eligible": 0, "current_action": "System Standby", 
@@ -55,11 +56,14 @@ class GhostMatrixEngine:
                 'health': HealthTracker(), 'synergy': SynergyManager(engine),
                 'traffic': TrafficPipeline(engine)
             }
-            self.log("🚀 Ghost Matrix v4.0 Command Center Active.", "SUCCESS")
+            # Load existing accounts from DB to avoid data loss
+            all_accs = self.modules['acc_manager'].get_all_accounts()
+            stats["total_accounts"] = len(all_accs)
+            self.log(f"🚀 System Restored: {len(all_accs)} accounts loaded from DB.", "SUCCESS")
         except Exception as e:
             self.log(f"Module Load Failure: {e}", "ERROR")
 
-    def account_lifecycle(self, country, target_url=None, boost_config=None):
+    def account_lifecycle(self, country, target_url=None):
         try:
             time.sleep(random.randint(1, 300))
             acc_id = self.modules['engine'].create_account(country)
@@ -69,16 +73,14 @@ class GhostMatrixEngine:
             stats["active"] += 1
             self.log(f"Account Active: {acc_id} ({country})", "SUCCESS")
 
-            while self.is_//running:
-                # If boosting a specific URL, use Human-Like Booster Logic
-                if target_url and boost_config:
-                    behavior = random.choice(boost_config['behaviors'])
-                    self.log(f"Account {acc_id} performing {behavior['action']} on target", "INFO")
-                    time.sleep(random.randint(30, 300))
-                    # Here the engine will execute the specific behavior (Like, Comment, etc)
-                    self.modules['engine'].execute_boost_action(acc_id, target_url, behavior['action'])
+            while self.is_running:
+                if target_url:
+                    # Human-like Boosting Behavior
+                    behavior = random.choice(['full_support', 'casual_like', 'ghost_view'])
+                    self.log(f"{acc_id} performing {behavior} on target", "INFO")
+                    self.modules['engine'].execute_boost_action(acc_id, target_url, behavior)
+                    time.sleep(random.randint(60, 600))
                 else:
-                    # Regular Warming Cycle
                     action = random.choice(['scroll', 'like', 'comment', 'upload', 'sleep'])
                     time.sleep(random.randint(10, 600))
                     if action == 'upload':
@@ -86,29 +88,18 @@ class GhostMatrixEngine:
                         self.modules['uploader'].upload_video(acc_id, vid_meta)
                     elif action == 'sleep':
                         time.sleep(random.randint(1800, 14400))
-                
-                if self.modules['health'].check_shop_eligibility(acc_id):
-                    stats["shop_eligible"] += 1
         except Exception as e:
-            self.log(f"LifeCycle Error: {str(e)}", "ERROR")
+            self.log(f"Lifecycle Error: {str(e)}", "ERROR")
 
     def run_parallel_workflow(self, country_config, target_url=None):
         self.is_running = True
-        boost_config = {
-            'behaviors': [
-                {'action': 'full_support', 'weight': 0.2}, # Watch full -> Like -> Comment -> Follow
-                {'action': 'casual_like', 'weight': 0.5},   # Watch partial -> Like
-                {'action': 'ghost_view', 'weight': 0.3},    # Only watch
-            ]
-        }
         all_tasks = []
         for country, count in country_config.items():
             for _ in range(count): all_tasks.append(country)
 
-        stats["current_action"] = f"Executing Parallel Workflow ({len(all_tasks)} Accounts)"
+        stats["current_action"] = f"Executing {len(all_tasks)} Accounts Workflow"
         with ThreadPoolExecutor(max_workers=100) as executor:
-            # Pass target_url and boost_config to the lifecycle
-            executor.map(lambda c: self.account_lifecycle(c, target_url, boost_config), all_tasks)
+            executor.map(lambda c: self.account_lifecycle(c, target_url), all_tasks)
         self.is_running = False
         stats["current_action"] = "Workflow Completed"
 
@@ -121,7 +112,7 @@ DASHBOARD_HTML = """
     <meta charset="UTF-8">
     <title>GHOST MATRIX v4 | Command Center</title>
     <style>
-        :root { --neon-green: #00ffcc; --neon-red: #ff4444; --dark-bg: #0a0a0a; --card-bg: #161616; }
+        :root { --neon-green: #00ffcc; --neon-red: #ff4444; --neon-purple: #8a2be2; --dark-bg: #0a0a0a; --card-bg: #161616; }
         body { background: var(--dark-bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; }
         .sidebar { width: 260px; background: #000; height: 100vh; border-left: 1px solid #333; position: fixed; right: 0; top: 0; padding: 20px; box-sizing: border-box; }
         .sidebar h2 { color: var(--neon-green); text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
@@ -131,7 +122,8 @@ DASHBOARD_HTML = """
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .status-pill { background: #222; padding: 5px 15px; border-radius: 20px; border: 1px solid var(--neon-green); color: var(--neon-green); }
         .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 15px; border: 1px solid #333; text-align: center; transition: 0.3s; }
+        .card:hover { border-color: var(--neon-green); }
         .card p { font-size: 32px; font-weight: bold; color: var(--neon-green); margin: 10px 0 0 0; }
         .panel { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid #444; margin-bottom: 30px; }
         .input-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -140,17 +132,18 @@ DASHBOARD_HTML = """
         .btn { padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-primary { background: var(--neon-green); color: #000; }
         .btn-danger { background: var(--neon-red); color: #fff; }
-        .btn-brain { background: #8a2be2; color: #fff; box-shadow: 0 0 10px #8a2be2; }
+        .btn-brain { background: var(--neon-purple); color: #fff; box-shadow: 0 0 10px var(--neon-purple); }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>GHOST MATRIX v4</h2>
         <a href="/" class="nav-btn">🏠 مین کمانڈ سینٹر</a>
-        <a href="/brain" class="nav-btn" style="color: #8a2be2;">🧠 THE BRAIN (منشی)</a>
+        <a href="/brain" class="nav-btn" style="color: var(--neon-purple);">🧠 THE BRAIN (منشی)</a>
         <a href="/health" class="nav-btn">🏥 ہیلتھ ٹریکر</a>
         <a href="/viral" class="nav-btn">🚀 ویریل لسٹ</a>
         <a href="/shop" class="nav-btn">🛒 شاپ ہب</a>
+        <a href="/inventory" class="nav-btn">📦 اکاؤنٹ انوینٹری</a>
     </div>
     <div class="main-content">
         <div class="header">
@@ -169,8 +162,12 @@ DASHBOARD_HTML = """
         <div class="panel">
             <h3>🚀 بوسٹنگ اور ریکروٹمنٹ (Targeted Engine)</h3>
             <form action="/start" method="post" class="input-group">
-                <input type="text" name="target_url" placeholder="Target URL (Optional)" style="width: 300px;">
-                UK: <input type="number" name="UK" value="0"> USA: <input type="number" name="USA" value="0"> PK: <input type="number" name="PK" value="0">
+                <input type="text" name="target_url" placeholder="Target URL (For Boosting)" style="width: 350px;">
+                UK: <input type="number" name="UK" value="0" style="width: 60px;"> 
+                USA: <input type="number" name="USA" value="0" style="width: 60px;"> 
+                PK: <input type="number" name="PK" value="0" style="width: 60px;"> 
+                Custom: <input type="text" name="OtherCountry" placeholder="Code" style="width: 70px;">
+                <input type="number" name="OtherCount" placeholder="Qty" style="width: 60px;">
                 <button type="submit" class="btn btn-primary">پروجیکٹ لانچ کریں ⚡</button>
             </form>
         </div>
@@ -190,6 +187,10 @@ def index():
 def start():
     target_url = request.form.get('target_url')
     config = {"UK": int(request.form.get('UK', 0)), "USA": int(request.form.get('USA', 0)), "PK": int(request.form.get('PK', 0))}
+    other_country = request.form.get('OtherCountry')
+    other_count = int(request.form.get('OtherCount', 0))
+    if other_country and other_count > 0: config[other_country] = other_count
+    
     threading.Thread(target=master_bot.run_parallel_workflow, args=(config, target_url)).start()
     return redirect(url_for('index'))
 
@@ -201,7 +202,15 @@ def kill():
 
 @app.route('/brain')
 def brain():
-    return "<h1 style='color:purple;'>The Brain Interface</h1><p>Welcome, Boss. Give me an order to update the system.</p><a href='/'>Back</a>"
+    return "<h1 style='color:purple;'>The Brain Interface</h1><p>Boss, the system is ready. I am monitoring all files.</p><a href='/'>Back</a>"
+
+@app.route('/inventory')
+def inventory():
+    accs = master_bot.modules['acc_manager'].get_all_accounts()
+    html = "<h1>Account Inventory</h1><table border='1' style='color:white; background:black; width:100%'><tr><th>User</th><th>Country</th><th>Status</th></tr>"
+    for u, d in accs.items(): html += f"<tr><td>{u}</td><td>{d['country']}</td><td>{d['status']}</td></tr>"
+    html += "</table><br><a href='/'>Back</a>"
+    return html
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
