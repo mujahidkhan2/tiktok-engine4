@@ -210,7 +210,27 @@ def inventory():
     html = "<h1>Account Inventory</h1><table border='1' style='color:white; background:black; width:100%'><tr><th>User</th><th>Country</th><th>Status</th></tr>"
     for u, d in accs.items(): html += f"<tr><td>{u}</td><td>{d['country']}</td><td>{d['status']}</td></tr>"
     html += "</table><br><a href='/'>Back</a>"
-    return html
+    return html# --- ADD THIS TO app.py ---
+from brain_core import brain
+from brain_security import security_shield
+
+@app.route('/brain')
+def brain_page():
+    return render_template('brain_chat.html')
+
+@app.route('/brain/execute', methods=['POST'])
+def brain_execute():
+    data = request.json
+    user_key = data.get('key')
+    command = data.get('command')
+    
+    # سیکیورٹی چیک
+    if not security_shield.verify_token("owner", user_key):
+        return {"status": "error", "response": "Access Denied: Invalid Security Token!"}
+    
+    # دماغ سے جواب لینا
+    response = brain.process_owner_command(user_key, command)
+    return {"status": "success", "response": response}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
