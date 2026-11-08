@@ -32,4 +32,4 @@ class TheBrain:
     def modify_file_content(self, filename, search_text, replace_text):
         try:
             files = self.scan_project_structure()
-            if filename
+            if filename:
