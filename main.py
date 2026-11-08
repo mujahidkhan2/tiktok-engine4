@@ -5,10 +5,9 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, render_template, render_template_string, redirect, url_for, request, jsonify
 
-# Import Brain Modules
+# Import Brain and Engine Modules
 try:
     from brain_core import brain
-    from brain_security import security_shield
     from engine import TikTokEngine
 except ImportError as e:
     print(f"Critical Import Error: {e}")
@@ -27,7 +26,6 @@ class GhostMatrixEngine:
         self.is_running = False
         try:
             self.engine = TikTokEngine()
-            # Load initial stats
             all_accs = self.engine.acc_manager.get_all_accounts()
             stats["total_accounts"] = len(all_accs)
         except Exception as e:
@@ -48,7 +46,7 @@ class GhostMatrixEngine:
         for country, count in config.items():
             for _ in range(count): all_tasks.append(country)
 
-        with ThreadPoolExecutor(max_workers=20) as executor: # Reduced for Free Server stability
+        with ThreadPoolExecutor(max_workers=20) as executor:
             executor.map(lambda c: self.account_lifecycle(c, target_url), all_tasks)
         
         self.is_running = False
@@ -73,9 +71,13 @@ class GhostMatrixEngine:
         except Exception as e:
             self.log(f"Lifecycle Error: {str(e)}", "ERROR")
 
+# Initialize the main engine
 master_bot = GhostMatrixEngine()
 
-# HTML for Dashboard
+# Link The Brain to the Engine (یہاں سے دماغ کو جسم کا کنٹرول ملتا ہے)
+brain.master_bot = master_bot
+
+# DASHBOARD HTML (Your Original Theme)
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
@@ -171,22 +173,20 @@ def inventory():
 
 @app.route('/brain')
 def brain_page():
-    try:
-        return render_template('brain_chat.html')
-    except Exception as e:
-        return f"Error: Template not found. Make sure 'brain_chat.html' is inside the 'templates' folder. <br>Details: {e}"
+    return render_template('brain_chat.html')
 
-@app.route('/brain/execute', methods=['POST'])
-def brain_execute():
+@app.route('/brain_chat', methods=['POST'])
+def brain_chat():
     data = request.json
-    user_key = data.get('key')
-    command = data.get('command')
+    user_message = data.get('message', '')
     
-    if not security_shield.verify_token("owner", user_key):
-        return jsonify({"status": "error", "response": "ACCESS DENIED: Invalid Master Key!"})
+    # ماسٹر کی کی تصدیق
+    if brain.verify_owner(user_message):
+        return jsonify({"response": "Master Key Verified. The Brain is now under your absolute control."})
     
-    response = brain.process_owner_command(user_key, command)
-    return jsonify({"status": "success", "response": response})
+    # برین کے ذریعے انجن کو کنٹرول کرنا
+    response = brain.execute_command(user_message)
+    return jsonify({"response": response})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
