@@ -52,4 +52,4 @@ class BrainSecurity:
             return f"Error wiping logs: {str(e)}"
 
 # Initialize Security with the same secret key
-security_shield = BrainSecurity(master_key="YOUR_SECRET_ACCESS_KEY_123")
+security_shield = BrainSecurity(master_key="YOUR_SECRET_ACCESS_KEY_123")Xo01;)5/#bren,45
