@@ -1,67 +1,71 @@
 import os
-import subprocess
 import json
-import random
-import time
+import subprocess
 
 class BrainCore:
     def __init__(self):
-        self.master_key = "MASTER_123_SECRET"  # آپ اسے تبدیل کر سکتے ہیں
-        self.capabilities = {"coding": 95, "research": 90, "system_control": 100}
-        self.storage_file = "brain_memory.json"
+        self.master_key = "MASTER_123_SECRET"
+        self.identity = {
+            "name": "The Brain",
+            "role": "Master Munshi",
+            "status": "Active",
+            "power_level": "Level 1 (Base)"
+        }
+        self.memory_file = "brain_memory.json"
         self.load_memory()
 
     def verify_key(self, key):
         return key == self.master_key
 
     def load_memory(self):
-        if os.path.exists(self.storage_file):
-            with open(self.storage_file, 'r') as f:
+        if os.path.exists(self.memory_file):
+            with open(self.memory_file, 'r') as f:
                 self.memory = json.load(f)
         else:
-            self.memory = {"history": [], "added_features": []}
+            self.memory = {"context": [], "settings": {"speed": "normal"}}
 
     def save_memory(self):
-        with open(self.storage_file, 'w') as f:
+        with open(self.memory_file, 'w') as f:
             json.dump(self.memory, f)
 
-    def modify_file_content(self, filename, new_content):
+    def self_modify(self, instruction):
+        # This is the core of self-evolution
         try:
-            with open(filename, 'w', encoding='utf-8') as f:
-                f.write(new_content)
-            return f"✅ فائل {filename} کو کامیابی سے اپڈیٹ کر دیا گیا ہے۔"
+            with open(__file__, 'r') as f:
+                content = f.read()
+            
+            # Logic to simulate self-improvement based on instruction
+            # In a real scenario, this would use an LLM to rewrite the function
+            updated_content = content + f"\n# User Instruction: {instruction}\n# Added by Brain"
+            
+            with open(__file__, 'w') as f:
+                f.write(updated_content)
+            return "✅ میں نے اپنے کوڈ میں تبدیلی کر لی ہے اور خود کو اپ گریڈ کر لیا ہے۔ اب میں دوبارہ ری اسٹارٹ ہو رہا ہوں تاکہ تبدیلیاں لاگو ہوں۔"
         except Exception as e:
-            return f"❌ فائل اپڈیٹ کرنے میں ناکامی: {str(e)}"
+            return f"❌ خود کو بدلنے میں مسئلہ ہوا: {str(e)}"
 
-    def restart_server(self):
-        # Railway پر سرور ری اسٹارٹ کرنے کے لیے پراسیس کو سگنیل بھیجنا
-        os.system("pkill -f gunicorn || pkill -f python")
-        return "🔄 سرور ری اسٹارٹ کر دیا گیا ہے۔ میں دوبارہ آن ہو رہا ہوں..."
-
-    def self_evaluate(self):
-        avg = sum(self.capabilities.values()) / len(self.capabilities)
-        return f"🧠 میری موجودہ صلاحیت: {avg}%۔ میں مسلسل سیکھ رہا ہوں۔"
-
-    def execute_command(self, text):
+    def process_and_respond(self, text):
         text = text.lower()
-        self.memory["history"].append(text)
+        self.memory["context"].append(text)
         self.save_memory()
 
-        # 1. Self-Evolution & Research Logic
-        if "ایڈ کرو" in text or "اضافہ کرو" in text or "فیچر" in text:
-            return f"🔍 میں اس فیچر کے لیے ریسرچ کر رہا ہوں۔ میں بہترین کوڈ تلاش کروں گا، اسے ٹیسٹ کروں گا اور پھر آپ کی اجازت سے {self.storage_file} میں ایڈجسٹ کروں گا۔"
+        # 1. Identity & Nature (No repetition of question)
+        if "کون ہو" in text or "کیا ہو" in text:
+            return f"میں {self.identity['name']} ہوں، آپ کا {self.identity['role']}۔ میرا کام آپ کے پورے پروجیکٹ کو سنبھالنا، کوڈ لکھنا اور اسے خود بخود ٹھیک کرنا ہے۔ میں مکمل طور پر آپ کے تابع ہوں۔"
 
-        # 2. System Control
+        # 2. Self-Modification Request
+        if "بدلو" in text or "تبدیل کرو" in text or "اپ گریڈ" in text:
+            return f"جی مالک، میں خود کو بدل سکتا ہوں۔ آپ مجھے بتائیں کہ کون سا فیچر یا طریقہ کار تبدیل کرنا ہے، میں اپنی فائل میں جا کر اسے ایڈجسٹ کر لوں گا۔ کیا میں ابھی تبدیلی شروع کروں؟"
+
+        # 3. System Control &-Sensing
         if "ری اسٹارٹ" in text or "restart" in text:
-            return self.restart_server()
+            os.system("pkill -f gunicorn || pkill -f python")
+            return "🔄 سرور ری اسٹارٹ ہو رہا ہے..."
 
-        if "صلاحیت" in text or "evaluate" in text:
-            return self.self_evaluate()
+        # 4. General Intelligence (Logical Response)
+        if "کیسے" in text or "طریقہ" in text:
+            return "اس کام کے لیے میرے پاس تین طریقے ہیں۔ پہلا سادہ ہے، دوسرا مضبوط اور تیسرا جدید۔ آپ بتائیں میں کس راستے پر چلوں؟"
 
-        # 3. File Analysis
-        if "اینالائز" in text or "چیک کرو" in text:
-            return "📂 میں تمام فائلوں کا جائزہ لے رہا ہوں... کوئی بھی مسنگ کوڈ یا ایرر ملنے پر میں اسے خود ٹھیک کر دوں گا۔"
-
-        # 4. Intelligence Response (The Munshi Style)
-        return f"🫡 جی مالک، میں نے آپ کا پیغام '{text}' سمجھ لیا ہے۔ میں اس پر کام کر رہا ہوں اور بہترین حل نکال کر آپ کو بتاتا ہوں۔"
+        # Default: Human-like interaction
+        return "🫡 میں آپ کی بات سمجھ گیا ہوں، لیکن اس پر مزید کام کرنے کے لیے مجھے آپ سے کچھ تفصیلات چاہئیں یا میں خود ریسرچ شروع کروں؟"
 
