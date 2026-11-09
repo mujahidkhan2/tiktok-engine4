@@ -1,180 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ur">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE BRAIN | Apex Command Center</title>
+    <title>The Brain | Command Center</title>
     <style>
-        body { 
-            background-color: #050505; 
-            color: #00ff41; 
-            font-family: 'Courier New', monospace; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            border: 3px solid #00ff41; 
-            box-sizing: border-box; 
-            overflow: hidden; 
+        body {
+            background: #0a0a0a; color: #00ff41; font-family: 'Courier New', monospace;
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
         }
-        #header { 
-            background: #000; 
-            padding: 15px; 
-            text-align: center; 
-            font-size: 1.5rem; 
-            border-bottom: 2px solid #00ff41; 
-            text-shadow: 0 0 15px #00ff41; 
-            letter-spacing: 3px; 
-            z-index: 10;
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 20px;
+            width: 80%; height: 80vh; display: flex; flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); overflow: hidden;
         }
-        #chat-container { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            background: radial-gradient(circle, #0a1a0a 0%, #000 100%); 
+        #chat-window {
+            flex: 1; overflow-y: auto; padding: 20px; font-size: 18px;
+            display: flex; flex-direction: column; gap: 10px;
         }
-        .message { 
-            max-width: 85%; 
-            padding: 12px 18px; 
-            border-radius: 15px; 
-            animation: slideIn 0.3s ease-out; 
-            line-height: 1.4; 
-            word-wrap: break-word;
+        .msg { padding: 10px; border-radius: 10px; max-width: 80%; }
+        .user-msg { background: rgba(0, 255, 65, 0.1); align-self: flex-end; text-align: right; }
+        .brain-msg { background: rgba(255, 255, 255, 0.05); align-self: flex-start; border-left: 3px solid #00ff41; }
+        .controls {
+            padding: 20px; background: rgba(0, 0, 0, 0.5); display: flex; gap: 10px; align-items: center;
         }
-        .brain-msg { 
-            align-self: flex-start; 
-            background: rgba(0, 255, 65, 0.1); 
-            border: 1px solid #00ff41; 
-            color: #00ff41; 
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); 
+        input {
+            flex: 1; background: transparent; border: 1px solid #00ff41;
+            color: #00ff41; padding: 10px; border-radius: 5px; outline: none;
         }
-        .user-msg { 
-            align-self: flex-end; 
-            background: rgba(255, 255, 255, 0.1); 
-            border: 1px solid #fff; 
-            color: #fff; 
-            text-align: right; 
+        button {
+            background: #00ff41; color: #000; border: none; padding: 10px 20px;
+            cursor: pointer; font-weight: bold; border-radius: 5px; transition: 0.3s;
         }
-        #input-area { 
-            padding: 20px; 
-            background: #000; 
-            border-top: 2px solid #00ff41; 
-            display: flex; 
-            gap: 10px; 
-            align-items: center; 
-            justify-content: center;
-        }
-        input { 
-            flex: 1; 
-            max-width: 600px;
-            background: #000; 
-            border: 1px solid #00ff41; 
-            color: #00ff41; 
-            padding: 12px; 
-            font-family: 'Courier New', monospace; 
-            outline: none; 
-            font-size: 1rem; 
-        }
-        button { 
-            background: #00ff41; 
-            color: #000; 
-            border: none; 
-            padding: 12px 20px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            text-transform: uppercase; 
-            transition: 0.3s; 
-            border-radius: 5px;
-        }
-        button:hover { background: #00cc33; box-shadow: 0 0 15px #00ff41; }
-        #voice-btn { 
-            background: #ff0000; 
-            color: #fff; 
-            border-radius: 50%; 
-            width: 50px; 
-            height: 50px; 
-            cursor: pointer; 
-            border: 2px solid #fff; 
-            font-size: 20px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            flex-shrink: 0;
-        }
-        #voice-btn.recording { animation: pulse 1s infinite; box-shadow: 0 0 20px #ff0000; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        button:hover { background: #00cc33; box-shadow: 0 0 10px #00ff41; }
+        .speed-btn { background: #333; color: #00ff41; border: 1px solid #00ff41; }
     </style>
 </head>
 <body>
-    <div id="header">🔴 THE BRAIN - APEX CONTROL 🔴</div>
-    <div id="chat-container">
-        <div class="message brain-msg">System Ready. I am THE BRAIN. All systems linked. Awaiting your command, Owner.</div>
+
+<div class="glass-panel">
+    <div id="chat-window">
+        <div class="msg brain-msg">🫡 منشی حاضر ہے، مالک۔ حکم کریں!</div>
     </div>
-    <div id="input-area">
-        <button id="voice-btn" onclick="startVoice()">🎤</button>
-        <input type="text" id="user-input" placeholder="Type command or use mic..." onkeypress="if(event.key==='Enter') sendMessage()">
-        <button onclick="sendMessage()">Execute</button>
+    <div class="controls">
+        <button class="speed-btn" onclick="changeSpeed('slow')">🐢</button>
+        <button class="speed-btn" onclick="changeSpeed('fast')">🚀</button>
+        <input type="text" id="userInput" placeholder="کچھ لکھیں یا بولیں...">
+        <button onclick="startVoice()">🎤</button>
+        <button onclick="sendMessage()">بھیجیں</button>
     </div>
+</div>
 
-    <script>
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        const synth = window.speechSynthesis;
+<script>
+    const MASTER_KEY = "MASTER_123_SECRET";
 
-        if (recognition) {
-            recognition.lang = 'en-US'; 
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('user-input').value = transcript;
-                sendMessage();
-            };
-            recognition.onend = () => { document.getElementById('voice-btn').classList.remove('recording'); };
-        }
+    async function sendMessage() {
+        const input = document.getElementById('userInput');
+        const chat = document.getElementById('chat-window');
+        if(!input.value) return;
 
-        function startVoice() {
-            if (!recognition) return alert("Voice not supported in this browser");
-            document.getElementById('voice-btn').classList.add('recording');
-            recognition.start();
-        }
+        chat.innerHTML += `<div class="msg user-msg">${input.value}</div>`;
+        const text = input.value;
+        input.value = '';
 
-        function speak(text) {
-            if (!synth) return;
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            synth.speak(utterance);
-        }
+        const response = await fetch('/brain/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+        chat.innerHTML += `<div class="msg brain-msg">${data.response}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+        
+        // Text-to-Speech
+        const speech = new SpeechSynthesisUtterance(data.response);
+        speech.lang = 'ur-PK';
+        window.speechSynthesis.speak(speech);
+    }
 
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const container = document.getElementById('chat-container');
-            const text = input.value.trim();
-            if (!text) return;
+    function startVoice() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ur-PK';
+        recognition.start();
+        recognition.onresult = (event) => {
+            document.getElementById('userInput').value = event.results[0][0].transcript;
+            sendMessage();
+        };
+    }
 
-            container.innerHTML += `<div class="message user-msg">${text}</div>`;
-            input.value = '';
-            container.scrollTop = container.scrollHeight;
-
-            try {
-                const response = await fetch('/brain_chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
-                });
-                const data = await response.json();
-                container.innerHTML += `<div class="message brain-msg">${data.response}</div>`;
-                container.scrollTop = container.scrollHeight;
-                speak(data.response);
-            } catch (e) {
-                container.innerHTML += `<div class="message brain-msg" style="color: red;">Error: Connection lost to The Brain.</div>`;
-            }
-        }
-    </script>
+    function changeSpeed(mode) {
+        alert("Speed set to: " + mode);
+        // This will be linked to BrainCore logic via sendMessage
+    }
+</script>
 </body>
 </html>
