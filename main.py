@@ -5,7 +5,6 @@ from brain_core import BrainCore
 app = Flask(__name__)
 brain = BrainCore()
 
-# Safe-Execution Wrapper: تاکہ اگر برین میں کوئی مسئلہ ہو تو ویب سائٹ بلیک سکرین نہ ہو
 @app.route('/')
 def index():
     return render_template('brain_chat.html')
@@ -17,17 +16,15 @@ def handle_command():
         user_input = data.get("message", "")
         auth_key = request.headers.get("X-Master-Key")
 
-        # Master Key Security Check
         if not brain.verify_key(auth_key):
-            return jsonify({"response": "❌ غیر مجاز رسائی! ماسٹر کی (Master Key) غلط ہے۔", "status": "error"}), 403
+            return jsonify({"response": "❌ غیر مجاز رسائی! ماسٹر کی غلط ہے۔", "status": "error"}), 403
 
-        # Brain processes the command
-        response = brain.execute_command(user_input)
+        # Brain's Advanced processing
+        response = brain.process_and_respond(user_input)
         return jsonify({"response": response, "status": "success"})
     except Exception as e:
-        return jsonify({"response": f"⚠️ سسٹم ایرر: {str(e)}۔ منشی اسے ٹھیک کرنے کی کوشش کر رہا ہے...", "status": "error"}), 500
+        return jsonify({"response": f"⚠️ سسٹم ایرر: {str(e)}۔ منشی اسے ٹھیک کر رہا ہے...", "status": "error"}), 500
 
 if __name__ == '__main__':
-    # Railway deployment ready
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
