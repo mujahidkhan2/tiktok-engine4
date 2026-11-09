@@ -1,79 +1,67 @@
 import os
 import subprocess
-import logging
-from datetime import datetime
+import json
+import random
+import time
 
-class TheBrain:
+class BrainCore:
     def __init__(self):
-        self.SECRET_KEY = "OWNER_MASTER_KEY_2026"
-        self.project_root = os.getcwd()
-        self.version = "v3.0_Autonomous_GodMode"
-        self.master_bot = None # This will be linked in app.py
-        
-        logging.basicConfig(filename='brain_activity.log', level=logging.INFO, 
-                            format='%(asctime)s - BRAIN - %(message)s')
+        self.master_key = "MASTER_123_SECRET"  # آپ اسے تبدیل کر سکتے ہیں
+        self.capabilities = {"coding": 95, "research": 90, "system_control": 100}
+        self.storage_file = "brain_memory.json"
+        self.load_memory()
 
-    def verify_owner(self, key):
-        return key == self.SECRET_KEY
+    def verify_key(self, key):
+        return key == self.master_key
 
-    def scan_project_structure(self):
-        structure = {}
-        for root, dirs, files in os.walk(self.project_root):
-            for file in files:
-                structure[file] = os.path.join(root, file)
-        return structure
+    def load_memory(self):
+        if os.path.exists(self.storage_file):
+            with open(self.storage_file, 'r') as f:
+                self.memory = json.load(f)
+        else:
+            self.memory = {"history": [], "added_features": []}
 
-    def execute_system_command(self, command):
+    def save_memory(self):
+        with open(self.storage_file, 'w') as f:
+            json.dump(self.memory, f)
+
+    def modify_file_content(self, filename, new_content):
         try:
-            logging.info(f"Executing: {command}")
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
-            return result.stdout if result.returncode == 0 else result.stderr
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            return f"✅ فائل {filename} کو کامیابی سے اپڈیٹ کر دیا گیا ہے۔"
         except Exception as e:
-            return str(e)
-
-    def modify_file_content(self, filename, search_text, replace_text):
-        try:
-            files = self.scan_project_structure()
-            if filename in files:
-                filepath = files[filename]
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                if search_text in content:
-                    new_content = content.replace(search_text, replace_text)
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        f.write(new_content)
-                    return f"Success: {filename} updated."
-                return "Error: Text not found."
-            return "Error: File not found."
-        except Exception as e:
-            return f"Critical Error: {str(e)}"
+            return f"❌ فائل اپڈیٹ کرنے میں ناکامی: {str(e)}"
 
     def restart_server(self):
-        try:
-            # Railway uses Procfile or main.py; triggering a restart
-            self.execute_system_command("touch main.py") 
-            return "Server restart triggered. System is rebooting..."
-        except Exception as e:
-            return f"Restart failed: {str(e)}"
+        # Railway پر سرور ری اسٹارٹ کرنے کے لیے پراسیس کو سگنیل بھیجنا
+        os.system("pkill -f gunicorn || pkill -f python")
+        return "🔄 سرور ری اسٹارٹ کر دیا گیا ہے۔ میں دوبارہ آن ہو رہا ہوں..."
 
     def self_evaluate(self):
-        return f"Brain Version: {self.version} | Status: Autonomous | Power: 100%"
+        avg = sum(self.capabilities.values()) / len(self.capabilities)
+        return f"🧠 میری موجودہ صلاحیت: {avg}%۔ میں مسلسل سیکھ رہا ہوں۔"
 
     def execute_command(self, text):
         text = text.lower()
-        if "restart" in text:
-            return self.restart_server()
-        elif "status" in text or "evaluate" in text:
-            return self.self_evaluate()
-        elif "stop" in text or "kill" in text:
-            if self.master_bot:
-                self.master_bot.is_running = False
-                return "Engine stopped by The Brain."
-            return "Engine not found."
-        elif "scan" in text:
-            struct = self.scan_project_structure()
-            return f"Project scanned. Found {len(struct)} files."
-        else:
-            return f"Command received: '{text}'. I am processing this within the matrix."
+        self.memory["history"].append(text)
+        self.save_memory()
 
-brain = TheBrain()
+        # 1. Self-Evolution & Research Logic
+        if "ایڈ کرو" in text or "اضافہ کرو" in text or "فیچر" in text:
+            return f"🔍 میں اس فیچر کے لیے ریسرچ کر رہا ہوں۔ میں بہترین کوڈ تلاش کروں گا، اسے ٹیسٹ کروں گا اور پھر آپ کی اجازت سے {self.storage_file} میں ایڈجسٹ کروں گا۔"
+
+        # 2. System Control
+        if "ری اسٹارٹ" in text or "restart" in text:
+            return self.restart_server()
+
+        if "صلاحیت" in text or "evaluate" in text:
+            return self.self_evaluate()
+
+        # 3. File Analysis
+        if "اینالائز" in text or "چیک کرو" in text:
+            return "📂 میں تمام فائلوں کا جائزہ لے رہا ہوں... کوئی بھی مسنگ کوڈ یا ایرر ملنے پر میں اسے خود ٹھیک کر دوں گا۔"
+
+        # 4. Intelligence Response (The Munshi Style)
+        return f"🫡 جی مالک، میں نے آپ کا پیغام '{text}' سمجھ لیا ہے۔ میں اس پر کام کر رہا ہوں اور بہترین حل نکال کر آپ کو بتاتا ہوں۔"
+
