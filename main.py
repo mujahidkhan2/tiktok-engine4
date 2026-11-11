@@ -4,7 +4,13 @@ from brain_core import TheBrain
 import traceback
 
 app = Flask(__name__)
-brain = TheBrain()
+
+# Brain کو یہاں Initialize کریں تاکہ اگر یہاں ایرر ہو تو پتہ چل جائے
+try:
+    brain = TheBrain()
+except Exception as e:
+    print(f"Brain Initialization Error: {e}")
+    brain = None
 
 @app.route('/')
 def index():
@@ -13,6 +19,9 @@ def index():
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
+        if brain is None:
+            return jsonify({"response": "Critical Error: Brain not initialized. Check Railway Variables."}), 500
+
         data = request.get_json()
         user_input = data.get("message")
         if not user_input:
@@ -21,10 +30,10 @@ def chat():
         response = brain.process_command(user_input)
         return jsonify({"response": response})
     except Exception as e:
-        # یہ حصہRailway کے لاگز میں بتائے گا کہ اصل مسئلہ کیا ہے
-        print("--- SYSTEM ERROR ---")
-        traceback.print_exc() 
-        return jsonify({"response": f"Server Error: {str(e)}"}), 500
+        # یہ اب ایرر کو براہ راست آپ کی چیٹ ونڈو میں بھیجے گا
+        error_details = traceback.format_exc()
+        print(error_details) 
+        return jsonify({"response": f"DEBUG ERROR:\n{error_details}"}), 500
 
 @app.route('/system_status', methods=['GET'])
 def status():
