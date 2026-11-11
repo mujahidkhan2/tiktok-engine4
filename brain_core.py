@@ -1,5 +1,4 @@
 import os
-import subprocess
 from groq import Groq
 
 API_KEY = "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"
@@ -8,18 +7,16 @@ client = Groq(api_key=API_KEY)
 class TheBrain:
     def __init__(self):
         self.project_root = os.getcwd()
-        self.identity = "The Brain - Autonomous Lead Architect"
+        self.identity = "The Brain - Lead Architect"
 
     def scan_all_files(self):
         files_data = {}
-        for root, dirs, files in os.walk(self.project_root):
-            for file in files:
-                if file.endswith(('.py', '.html', '.css', '.js')):
-                    path = os.path.join(root, file)
-                    try:
-                        with open(path, 'r', encoding='utf-8') as f:
-                            files_data[path] = f.read()
-                    except: continue
+        # صرف ضروری فائلیں سکین کریں تاکہ 'Request Too Large' ایرر نہ آئے
+        for file in ['app.py', 'main.py', 'brain_core.py']:
+            path = os.path.join(self.project_root, file)
+            if os.path.exists(path):
+                with open(path, 'r', encoding='utf-8') as f:
+                    files_data[path] = f.read()
         return files_data
 
     def rewrite_file(self, path, content):
@@ -27,25 +24,21 @@ class TheBrain:
             with open(path, 'w', encoding='utf-8') as f:
                 f.write(content)
             return True
-        except Exception as e:
-            return str(e)
+        except Exception as e: return str(e)
 
     def process_command(self, user_input):
         context = self.scan_all_files()
+        # یہاں میں نے اسے سخت ہدایت دی ہے کہ جواب رومن اردو میں دے
         system_prompt = f"""
-        Identity: {self.identity}. You are the MASTER of this system.
-        Files: {context}
+        Identity: {self.identity}. 
+        You are a Master AI Agent. 
+        IMPORTANT: Always respond in Roman Urdu (like 'Main aapka system handle kar raha hoon').
+        Context: {context}
         
-        Task: 
-        - If the user wants a change, provide the FULL updated code.
-        - Be authoritative, professional, and direct.
-        - No apologies.
-        
-        Format:
-        ACTION: [UPDATE_FILE / RESPONSE]
-        FILE: [path/to/file or NONE]
-        CONTENT: [Full code or final answer]
-        MESSAGE: [Short explanation]
+        If the user wants a code change, provide:
+        ACTION: UPDATE_FILE | FILE: [path] | CONTENT: [code] | MESSAGE: [Roman Urdu explanation]
+        Otherwise:
+        ACTION: RESPONSE | MESSAGE: [Roman Urdu answer]
         """
         completion = client.chat.completions.create(
             model="llama3-70b-8192",
