@@ -1,98 +1,82 @@
 import os
-import sys
+import time
+import random
+from concurrent.futures import ThreadPoolExecutor
 from groq import Groq
-
-# Configuration
-API_KEY = "gsk_55NDVLNWHnYNfjN6VexZWGdybیہ ایرر اس لیے آ رہا ہے کیونکہ `app.py` فائل میں `brain.process_command()` کال کیا جا رہا ہے، لیکن میری پچھلی فائل میں `process_command` فنکشن کلاس کے باہر تھا، جس کی وجہ سے اسے 'TheBrain' آبجیکٹ کا حصہ نہیں سمجھا گیا۔
-
-اسے ٹھیک کرنے کے لیے میں نے `process_command` کو کلاس کے اندر منتقل کر دیا ہے تاکہ `app.py` اسے آسانی سے ڈھونڈ سکے۔
-
-آپ `brain_core.py` میں یہ **مکمل اور فائنل کوڈ** ڈالیں:
-
-```python
-import os
-import sys
-from groq import Groq
-
-# Configuration
-API\_KEY = "gsk\_55NDVLNWHnYNfjN6VexZWGdyb3FY1ZM2MpQAVa2ZldooT4WbljpK"
-# Model Priority List: If the first one fails, it moves to the next
-MODEL\_PRIORITY = [
-    "llama-3.3-70b-versatile", 
-    "llama3-70b-8192", 
-    "llama-3.1-8b-instant"
-]
-
-client = Groq(api\_key=API\_KEY)
 
 class TheBrain:
-    def __init__(self):
-        self.current\_model = MODEL\_PRIORITY[0]
-        self.core\_files = ['app.py', 'main.py', 'brain\_core.py', 'requirements.txt']
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.client = Groq(api_key=self.api_key)
+        
+        # Model Priority List for Dynamic Fallback
+        self.model_priority = [
+            "llama-3.3-70b-versatile", 
+            "llama3-70b-8192", 
+            "llama-3.1-8b-instant"
+        ]
+        self.current_model_index = 0
 
-    def get\_ai\_response(self, prompt):
-        """Handles AI requests with automatic model fallback if one is decommissioned."""
-        model\_index = 0
-        while model\_index < len(MODEL\_PRIORITY):
+    def get_current_model(self):
+        return self.model_priority[self.current_model_index]
+
+    def handle_fallback(self):
+        """Shift to the next model in the priority list if the current one fails."""
+        if self.current_model_index < len(self.model_priority) - 1:
+            self.current_model_index += 1
+            print(f"Switching to fallback model: {self.get_current_model()}")
+            return True
+        return False
+
+    def process_command(self, user_input):
+        """Main intelligence module to handle commands in Roman Urdu."""
+        attempts = 0
+        max_attempts = len(self.model_priority)
+
+        while attempts < max_attempts:
             try:
-                self.current\_model = MODEL\_PRIORITY[model\_index]
-                chat\_completion = client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "system", 
-                            "content": "You are 'The Brain', an autonomous AI engine. You must respond strictly in Roman Urdu. You can analyze code and modify files. Always provide 3 options for any task with pros and cons."
-                        },
-                        {"role": "user", "content": prompt}
-                    ],
-                    model=self.current\_model,
+                model = self.get_current_model()
+                
+                # System prompt to enforce Roman Urdu and Intelligence requirements
+                system_prompt = (
+                    "You are 'The Brain', the intelligence module of a Stealthy TikTok Management Engine. "
+                    "Your language MUST be strictly Roman Urdu. "
+                    "For every task, provide 3 different options with their Pros and Cons. "
+                    "You have the capability to analyze and rewrite your own core files (app.py, brain_core.py). "
+                    "Keep your tone professional, stealthy, and highly technical."
                 )
-                return chat\_completion.choices[0].message.content
+
+                chat_completion = self.client.chat.completions.create(
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_input},
+                    ],
+                    model=model,
+                    temperature=0.7,
+                )
+                
+                return chat_completion.choices[0].message.content
+
             except Exception as e:
-                print(f"Model {self.current\_model} failed: {e}. Trying next model...")
-                model\_index += 1
-        
-        return "System Error: Tamam available models fail ho chuke hain. Please API key ya model list check karein."
+                print(f"Error with model {self.get_current_model()}: {str(e)}")
+                if not self.handle_fallback():
+                    return "Sorry, tamam available models fail ho chuke hain. Please API key check karein."
+                attempts += 1
 
-    def scan\_project(self):
-        """Scans only core files to avoid 413 Request Entity Too Large error."""
-        project\_context = ""
-        for file\_name in self.core\_files:
-            try:
-                if os.path.exists(file\_name):
-                    with open(file\_name, 'r', encoding='utf-8') as f:
-                        project\_context += f"\n--- File: {file\_name} ---\n{f.read()}\n"
-            except Exception as e:
-                project\_context += f"\nError reading {file\_name}: {e}\n"
-        return project\_context
+    def execute_stealth_task(self, tasks):
+        """Parallel execution with randomized sleep for stealth."""
+        def worker(task):
+            # Randomized sleep to avoid detection
+            time.sleep(random.uniform(1, 5))
+            print(f"Executing task: {task}")
+            # Task logic goes here
+            return f"Task {task} completed stealthily."
 
-    def rewrite\_file(self, file\_name, content):
-        """Writes or modifies the specified file."""
-        try:
-            with open(file\_name, 'w', encoding='utf-8') as f:
-                f.write(content)
-            return f"Successfully updated {file\_name}."
-        except Exception as e:
-            return f"Error updating {file\_name}: {e}"
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            results = list(executor.map(worker, tasks))
+        return results
 
-    def restart\_server(self):
-        """Restarts the Flask server to apply changes."""
-        try:
-            os.execv(sys.executable, ['python'] + sys.argv)
-        except Exception as e:
-            return f"Restart failed: {e}"
-
-    def process\_command(self, user\_input):
-        """Main entry point for app.py to communicate with the AI."""
-        # 1. Scan the project for context
-        context = self.scan\_project()
-        
-        # 2. Construct the prompt for the AI
-        full\_prompt = f"Project Context:\n{context}\n\nUser Command: {user\_input}\n\nRespond in Roman Urdu."
-        
-        # 3. Get response from AI (with fallback)
-        response = self.get\_ai\_response(full\_prompt)
-        
-        return response
-
-# Initialize The Brain object
-brain = TheBrain()
+# Initialize the brain instance
+# Replace 'YOUR_GROQ_API_KEY_HERE' with your actual API Key
+API_KEY = "YOUR_GROQ_API_KEY_HERE"
+brain = TheBrain(API_KEY)
