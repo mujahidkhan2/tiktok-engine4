@@ -5,12 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 class TheBrain:
     def __init__(self):
-        # Now fetching the key from Railway Environment Variables
         self.api_key = os.environ.get("HF_API_KEY")
-        
-        if not self.api_key:
-            print("CRITICAL ERROR: HF_API_KEY not found in Environment Variables!")
-
         self.model_id = "meta-llama/Llama-3.2-3B-Instruct" 
         self.api_url = f"https://api-inference.huggingface.co/models/{self.model_id}"
         self.headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -18,7 +13,7 @@ class TheBrain:
 
     def call_llm(self, prompt):
         if not self.api_key:
-            return "Error: API Key is missing. Please add HF_API_KEY in Railway Variables."
+            return "Configuration Error: HF_API_KEY missing in Railway Variables."
 
         payload = {
             "inputs": prompt,
@@ -29,18 +24,22 @@ class TheBrain:
             }
         }
         try:
-            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=15)
+            # Added timeout to prevent server hanging
+            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=20)
+            
             if response.status_code == 200:
                 result = response.json()
                 if isinstance(result, list) and len(result) > 0:
                     return result[0].get('generated_text', 'No response generated.')
                 return str(result)
             elif response.status_code == 503:
-                return "System is loading model, please try again in 30 seconds."
+                return "Model is currently loading on Hugging Face. Please wait 30 seconds and try again."
             else:
-                return f"API Error: {response.status_code}"
+                return f"AI Engine Error: {response.status_code}"
+        except requests.exceptions.Timeout:
+            return "Request timed out. The AI is taking too long to respond."
         except Exception as e:
-            return f"Connection Error: {str(e)}"
+            return f"System Error: {str(e)}"
 
     def process_command(self, user_input):
         system_prompt = (
