@@ -63,7 +63,7 @@ class TheBrain:
         
         try:
             completion = client.chat.completions.create(
-                model="llama-3.1-70b-versatile", # Latest stable model
+                model="llama-3.3-70b-versatile", # Latest stable model
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input}
