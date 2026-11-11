@@ -102,33 +102,40 @@
             const text = userInput.value.trim();
             if (!text) return;
 
+            // User message immediately shown
             appendMessage(text, 'user');
             userInput.value = '';
 
             try {
+                // Using relative path /chat to ensure it works on Railway
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: text })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
                 const data = await response.json();
-                const aiResponse = data.response || "Error occurred!";
+                const aiResponse = data.response || "No response from brain.";
                 appendMessage(aiResponse, 'ai');
                 
-                // Auto-speak the AI response
                 speak(aiResponse);
             } catch (error) {
-                appendMessage("Server connection failed!", 'ai');
+                console.error("Error:", error);
+                appendMessage("Connection error: " + error.message, 'ai');
             }
         }
 
         function speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'hi-IN'; // Roman Urdu sounds best with Hindi voice
+            utterance.lang = 'hi-IN'; 
             window.speechSynthesis.speak(utterance);
         }
 
-        // Voice-to-Text Logic
+        // Voice-to-Text
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
@@ -148,171 +155,6 @@
 
             recognition.onerror = () => {
                 voiceBtn.innerText = "🎤";
-                alert("Voice recognition error!");
-            };
-        } else {
-            voiceBtn.style.display = 'none';
-        }
-
-        sendBtn.onclick = sendMessage;
-        userInput.onkeypress = (e)آپ کے سسٹم کی آخری کمی یہ HTML فائل تھی۔ اب آپ کا پورا پزل (Puzzle) مکمل ہو چکا ہے۔
-
-**یاد دہانی:** اس فائل کو GitHub پر **`templates`** نام کے فولڈر کے اندر **`index.html`** کے نام سے رکھیں۔
-
-### **فائل: `templates/index.html`**
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Brain - Stealth Engine</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 15px;
-            font-size: 15px;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-        .user-message {
-            align-self: flex-end;
-            background-color: #007bff;
-            color: white;
-            border-bottom-right-radius: 2px;
-        }
-        .ai-message {
-            align-self: flex-start;
-            background-color: white;
-            color: #333;
-            border: 1px solid #ddd;
-            border-bottom-left-radius: 2px;
-            white-space: pre-wrap;
-        }
-        #input-area {
-            background: white;
-            padding: 20px;
-            border-top: 1px solid #ddd;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
-            outline: none;
-            font-size: 16px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        #send-btn { background-color: #007bff; color: white; }
-        #voice-btn { background-color: #eee; color: #333; }
-        #send-btn:hover { background-color: #0056b3; }
-    </style>
-</head>
-<body>
-
-    <div id="chat-container">
-        <div class="message ai-message">Assalam-o-Alaikum! Main "The Brain" hoon. Aapka stealthy TikTok engine ready hai. Hukum karein!</div>
-    </div>
-
-    <div id="input-area">
-        <button id="voice-btn">🎤</button>
-        <input type="text" id="user-input" placeholder="Type your command in Roman Urdu...">
-        <button id="send-btn">Send</button>
-    </div>
-
-    <script>
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const voiceBtn = document.getElementById('voice-btn');
-
-        function appendMessage(text, sender) {
-            const msgDiv = document.createElement('div');
-            msgDiv.classList.add('message', sender === 'user' ? 'user-message' : 'ai-message');
-            msgDiv.innerText = text;
-            chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        async function sendMessage() {
-            const text = userInput.value.trim();
-            if (!text) return;
-
-            appendMessage(text, 'user');
-            userInput.value = '';
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text })
-                });
-                const data = await response.json();
-                const aiResponse = data.response || "Error occurred!";
-                appendMessage(aiResponse, 'ai');
-                
-                // Auto-speak the AI response
-                speak(aiResponse);
-            } catch (error) {
-                appendMessage("Server connection failed!", 'ai');
-            }
-        }
-
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'hi-IN'; // Roman Urdu sounds best with Hindi voice
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // Voice-to-Text Logic
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'ur-PK'; 
-
-            voiceBtn.onclick = () => {
-                recognition.start();
-                voiceBtn.innerText = "Listening...";
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                userInput.value = transcript;
-                voiceBtn.innerText = "🎤";
-                sendMessage();
-            };
-
-            recognition.onerror = () => {
-                voiceBtn.innerText = "🎤";
-                alert("Voice recognition error!");
             };
         } else {
             voiceBtn.style.display = 'none';
